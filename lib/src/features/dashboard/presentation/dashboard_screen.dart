@@ -70,7 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Exact scheduling, native persistence, and Flutter CRUD now share one vertical slice.',
+                'The alarm engine is live. Sprint 4 turns the dashboard into the control surface for device readiness and alarm policy.',
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: const Color(0xFF56483A),
                   height: 1.35,
@@ -92,6 +92,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 },
               ),
               const SizedBox(height: 20),
+              _DeviceDiagnosticsSection(
+                status: engineStatus,
+                onRequestExactAlarmAccess: () {
+                  _requestExactAlarmPermission(context);
+                },
+                onRequestNotificationAccess: () {
+                  _requestNotificationPermission(context);
+                },
+                onRequestBatteryOptimizationExemption: () {
+                  _requestBatteryOptimizationExemption(context);
+                },
+                onRequestCameraPermission: () {
+                  _requestCameraPermission(context);
+                },
+                onRequestActivityRecognitionPermission: () {
+                  _requestActivityRecognitionPermission(context);
+                },
+              ),
+              const SizedBox(height: 20),
               Text(
                 'Scheduled alarms',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -101,7 +120,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               const SizedBox(height: 12),
               _AlarmListSection(
                 alarms: alarms,
-                onEdit: (alarm) => _editAlarm(context, ref, alarm),
+                onEdit: (alarm) =>
+                    _editAlarm(context, ref, alarm, engineStatus.asData?.value),
                 onDelete: (alarm) => _deleteAlarm(context, ref, alarm),
                 onToggle: (alarm, enabled) =>
                     _setEnabled(context, ref, alarm, enabled),
@@ -121,7 +141,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final draft = AlarmSpec.createDraft(
       timezoneId: engineStatus?.timezoneId ?? 'UTC',
     );
-    final edited = await AlarmEditorSheet.show(context, alarm: draft);
+    final edited = await AlarmEditorSheet.show(
+      context,
+      alarm: draft,
+      engineStatus: engineStatus,
+    );
     if (edited == null || !context.mounted) {
       return;
     }
@@ -136,8 +160,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     BuildContext context,
     WidgetRef ref,
     AlarmSpec alarm,
+    AlarmEngineStatus? engineStatus,
   ) async {
-    final edited = await AlarmEditorSheet.show(context, alarm: alarm);
+    final edited = await AlarmEditorSheet.show(
+      context,
+      alarm: alarm,
+      engineStatus: engineStatus,
+    );
     if (edited == null || !context.mounted) {
       return;
     }
@@ -204,6 +233,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       () => ref.read(alarmRepositoryProvider).requestNotificationPermission(),
     );
   }
+
+  Future<void> _requestBatteryOptimizationExemption(
+    BuildContext context,
+  ) async {
+    await _runRepositoryAction(
+      context,
+      () => ref
+          .read(alarmRepositoryProvider)
+          .requestBatteryOptimizationExemption(),
+    );
+  }
+
+  Future<void> _requestCameraPermission(BuildContext context) async {
+    await _runRepositoryAction(
+      context,
+      () => ref.read(alarmRepositoryProvider).requestCameraPermission(),
+    );
+  }
+
+  Future<void> _requestActivityRecognitionPermission(
+    BuildContext context,
+  ) async {
+    await _runRepositoryAction(
+      context,
+      () => ref
+          .read(alarmRepositoryProvider)
+          .requestActivityRecognitionPermission(),
+    );
+  }
 }
 
 class _HeroStatusCard extends StatelessWidget {
@@ -229,7 +287,7 @@ class _HeroStatusCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               child: const Text(
-                'Sprint 3 native ring path',
+                'Sprint 4 diagnostics pass',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -238,7 +296,7 @@ class _HeroStatusCard extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'Exact scheduling now hands off to a native ring session with a foreground service.',
+              'Alarm delivery is now paired with device diagnostics and a fuller editor model.',
               style: theme.textTheme.headlineSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
@@ -252,7 +310,17 @@ class _HeroStatusCard extends StatelessWidget {
                   : 'Device timezone: ${engineStatus!.timezoneId}\n'
                         'Exact alarms: ${engineStatus!.canScheduleExactAlarms ? 'ready' : 'permission required'}\n'
                         'Notifications: ${engineStatus!.notificationsEnabled ? 'ready' : 'permission required'}\n'
-                        'Foreground ring service: native Android',
+                        'Battery optimization: ${engineStatus!.batteryOptimizationIgnored ? 'ignored' : 'active'}\n'
+                        'Camera: ${engineStatus!.cameraReady
+                            ? 'ready'
+                            : engineStatus!.hasCamera
+                            ? 'permission required'
+                            : 'unsupported'}\n'
+                        'Steps: ${engineStatus!.stepsMissionReady
+                            ? 'ready'
+                            : engineStatus!.hasStepSensor
+                            ? 'permission required'
+                            : 'unsupported'}',
               style: const TextStyle(color: Color(0xFFE8DDCF), height: 1.5),
             ),
           ],
@@ -316,7 +384,7 @@ class _NotificationStatusBanner extends StatelessWidget {
         return _InfoBanner(
           title: 'Notifications are disabled',
           detail:
-              'The exact alarm fired, but Android will suppress the Sprint 2 notification path until notification access is granted.',
+              'The exact alarm can still ring, but Android will suppress notification affordances until notification access is granted.',
           accent: const Color(0xFFC85C3D),
           actionLabel: onRequestAccess == null ? null : 'Enable notifications',
           onAction: onRequestAccess,
@@ -324,6 +392,194 @@ class _NotificationStatusBanner extends StatelessWidget {
       },
       loading: () => const SizedBox.shrink(),
       error: (error, stackTrace) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _DeviceDiagnosticsSection extends StatelessWidget {
+  const _DeviceDiagnosticsSection({
+    required this.status,
+    required this.onRequestExactAlarmAccess,
+    required this.onRequestNotificationAccess,
+    required this.onRequestBatteryOptimizationExemption,
+    required this.onRequestCameraPermission,
+    required this.onRequestActivityRecognitionPermission,
+  });
+
+  final AsyncValue<AlarmEngineStatus> status;
+  final VoidCallback onRequestExactAlarmAccess;
+  final VoidCallback onRequestNotificationAccess;
+  final VoidCallback onRequestBatteryOptimizationExemption;
+  final VoidCallback onRequestCameraPermission;
+  final VoidCallback onRequestActivityRecognitionPermission;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      color: const Color(0xFFFFFBF4),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: status.when(
+          data: (status) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Device diagnostics',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'These checks are the current ground truth for alarm delivery and future mission availability on this device.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF56483A),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _DiagnosticTile(
+                  title: 'Exact alarms',
+                  statusLabel: status.canScheduleExactAlarms
+                      ? 'Ready'
+                      : 'Needs access',
+                  detail: status.canScheduleExactAlarms
+                      ? 'Exact scheduling is available.'
+                      : 'Enabled alarms cannot be scheduled until exact-alarm access is available.',
+                  accent: status.canScheduleExactAlarms
+                      ? const Color(0xFF2B6A6C)
+                      : const Color(0xFFC85C3D),
+                  actionLabel: status.canScheduleExactAlarms
+                      ? null
+                      : 'Open settings',
+                  onAction: status.canScheduleExactAlarms
+                      ? null
+                      : onRequestExactAlarmAccess,
+                ),
+                const SizedBox(height: 12),
+                _DiagnosticTile(
+                  title: 'Notifications',
+                  statusLabel: status.notificationsEnabled
+                      ? 'Ready'
+                      : 'Needs access',
+                  detail: status.notificationsEnabled
+                      ? 'The ring service can surface high-priority notifications.'
+                      : 'Foreground alarm UI still works, but notification affordances are suppressed until permission is granted.',
+                  accent: status.notificationsEnabled
+                      ? const Color(0xFF2B6A6C)
+                      : const Color(0xFFC85C3D),
+                  actionLabel: status.notificationsEnabled
+                      ? null
+                      : 'Enable notifications',
+                  onAction: status.notificationsEnabled
+                      ? null
+                      : onRequestNotificationAccess,
+                ),
+                const SizedBox(height: 12),
+                _DiagnosticTile(
+                  title: 'Battery optimization',
+                  statusLabel: status.batteryOptimizationIgnored
+                      ? 'Ignored'
+                      : 'Still active',
+                  detail: status.batteryOptimizationIgnored
+                      ? 'The app is already exempt from battery optimizations.'
+                      : 'Exact alarms still fire, but some OEMs are more aggressive unless the app is exempt.',
+                  accent: status.batteryOptimizationIgnored
+                      ? const Color(0xFF2B6A6C)
+                      : const Color(0xFFC85C3D),
+                  actionLabel: status.batteryOptimizationIgnored
+                      ? null
+                      : 'Request exemption',
+                  onAction: status.batteryOptimizationIgnored
+                      ? null
+                      : onRequestBatteryOptimizationExemption,
+                ),
+                const SizedBox(height: 12),
+                _DiagnosticTile(
+                  title: 'Camera mission readiness',
+                  statusLabel: !status.hasCamera
+                      ? 'Unsupported'
+                      : status.cameraPermissionGranted
+                      ? 'Ready'
+                      : 'Permission required',
+                  detail: !status.hasCamera
+                      ? 'This device does not expose a usable camera to the app.'
+                      : status.cameraPermissionGranted
+                      ? 'Camera prerequisites are satisfied for the future QR mission.'
+                      : 'Grant camera permission now so the QR mission path is ready when the native vision pipeline lands.',
+                  accent: status.cameraReady
+                      ? const Color(0xFF2B6A6C)
+                      : const Color(0xFFC85C3D),
+                  actionLabel:
+                      (!status.hasCamera || status.cameraPermissionGranted)
+                      ? null
+                      : 'Grant camera',
+                  onAction:
+                      (!status.hasCamera || status.cameraPermissionGranted)
+                      ? null
+                      : onRequestCameraPermission,
+                ),
+                const SizedBox(height: 12),
+                _DiagnosticTile(
+                  title: 'Steps mission readiness',
+                  statusLabel: !status.hasStepSensor
+                      ? 'Unsupported'
+                      : status.activityRecognitionGranted
+                      ? 'Ready'
+                      : 'Permission required',
+                  detail: !status.hasStepSensor
+                      ? 'This device does not expose a hardware step counter.'
+                      : status.activityRecognitionGranted
+                      ? 'Sensor prerequisites are satisfied for the future steps mission.'
+                      : 'Grant activity recognition so the steps mission can be enabled when the mission runtime lands.',
+                  accent: status.stepsMissionReady
+                      ? const Color(0xFF2B6A6C)
+                      : const Color(0xFFC85C3D),
+                  actionLabel:
+                      (!status.hasStepSensor ||
+                          status.activityRecognitionGranted)
+                      ? null
+                      : 'Grant activity access',
+                  onAction:
+                      (!status.hasStepSensor ||
+                          status.activityRecognitionGranted)
+                      ? null
+                      : onRequestActivityRecognitionPermission,
+                ),
+              ],
+            );
+          },
+          loading: () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Device diagnostics',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('Loading device readiness checks...'),
+            ],
+          ),
+          error: (error, stackTrace) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Device diagnostics',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('$error'),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -349,7 +605,7 @@ class _AlarmListSection extends StatelessWidget {
           return const _InfoBanner(
             title: 'No alarms yet',
             detail:
-                'Create a one-time or repeating alarm to exercise the native store and exact scheduling pipeline.',
+                'Create a one-time or repeating alarm to exercise the native store, exact scheduler, and Sprint 4 configuration flow.',
             accent: Color(0xFF2B6A6C),
           );
         }
@@ -465,6 +721,10 @@ class _AlarmCard extends StatelessWidget {
               value:
                   '${alarm.snoozeDurationMinutes} min | ${alarm.maxSnoozes} max',
             ),
+            const SizedBox(height: 8),
+            _InfoRow(label: 'Ringtone', value: alarm.ringtoneSummary),
+            const SizedBox(height: 8),
+            _InfoRow(label: 'Dismissal', value: alarm.missionSummary),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -485,6 +745,88 @@ class _AlarmCard extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiagnosticTile extends StatelessWidget {
+  const _DiagnosticTile({
+    required this.title,
+    required this.statusLabel,
+    required this.detail,
+    required this.accent,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String title;
+  final String statusLabel;
+  final String detail;
+  final Color accent;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5EEE2),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              detail,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF56483A),
+                height: 1.4,
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 12),
+              FilledButton.tonal(
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
+            ],
           ],
         ),
       ),

@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  testWidgets('renders sprint 2 dashboard shell', (tester) async {
+  testWidgets('renders dashboard shell', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -17,10 +17,10 @@ void main() {
         child: const AlarmApp(),
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('alarms-oss'), findsOneWidget);
-    expect(find.text('Scheduled alarms'), findsOneWidget);
+    expect(find.text('Add alarm'), findsOneWidget);
   });
 }
 
@@ -36,6 +36,11 @@ class _FakeAlarmRepository implements AlarmRepository {
     return const AlarmEngineStatus(
       canScheduleExactAlarms: true,
       notificationsEnabled: true,
+      batteryOptimizationIgnored: false,
+      hasCamera: true,
+      cameraPermissionGranted: false,
+      hasStepSensor: true,
+      activityRecognitionGranted: false,
       timezoneId: 'UTC',
     );
   }
@@ -44,6 +49,15 @@ class _FakeAlarmRepository implements AlarmRepository {
   Future<ActiveAlarmSession?> getActiveAlarmSession() async {
     return null;
   }
+
+  @override
+  Future<void> requestActivityRecognitionPermission() async {}
+
+  @override
+  Future<void> requestBatteryOptimizationExemption() async {}
+
+  @override
+  Future<void> requestCameraPermission() async {}
 
   @override
   Future<void> requestExactAlarmPermission() async {}

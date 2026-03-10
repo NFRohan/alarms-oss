@@ -22,6 +22,12 @@ abstract class AlarmRepository {
 
   Future<void> dismissActiveAlarmSession();
 
+  Future<void> requestBatteryOptimizationExemption();
+
+  Future<void> requestCameraPermission();
+
+  Future<void> requestActivityRecognitionPermission();
+
   Future<void> requestExactAlarmPermission();
 
   Future<void> requestNotificationPermission();

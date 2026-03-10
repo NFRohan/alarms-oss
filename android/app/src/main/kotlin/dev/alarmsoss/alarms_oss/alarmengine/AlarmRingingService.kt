@@ -16,6 +16,7 @@ import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import dev.alarmsoss.alarms_oss.MainActivity
@@ -123,12 +124,8 @@ class AlarmRingingService : Service() {
             return
         }
 
-        val toneUri = RingtoneManager.getActualDefaultRingtoneUri(
-            applicationContext,
-            RingtoneManager.TYPE_ALARM,
-        )
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val activeAlarm = currentSession?.alarmId?.let(alarmStore::get)
+        val toneUri = resolveToneUri(activeAlarm?.ringtoneId ?: "system_alarm")
             ?: return
 
         ringtone = RingtoneManager.getRingtone(applicationContext, toneUri)?.apply {
@@ -144,6 +141,18 @@ class AlarmRingingService : Service() {
     private fun startVibration() {
         val effect = VibrationEffect.createWaveform(longArrayOf(0, 700, 500), 0)
         vibrator().vibrate(effect)
+    }
+
+    private fun resolveToneUri(ringtoneId: String): Uri? {
+        val ringtoneType = when (ringtoneId) {
+            "system_notification" -> RingtoneManager.TYPE_NOTIFICATION
+            else -> RingtoneManager.TYPE_ALARM
+        }
+
+        return RingtoneManager.getActualDefaultRingtoneUri(applicationContext, ringtoneType)
+            ?: RingtoneManager.getDefaultUri(ringtoneType)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
     }
 
     private fun acquireWakeLock() {

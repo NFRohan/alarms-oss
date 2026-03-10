@@ -12,6 +12,7 @@ data class AlarmRecord(
     val timezoneId: String,
     val enabled: Boolean,
     val weekdays: List<Int>,
+    val ringtoneId: String,
     val snoozeDurationMinutes: Int,
     val maxSnoozes: Int,
     val missionType: String,
@@ -26,6 +27,7 @@ data class AlarmRecord(
             "timezoneId" to timezoneId,
             "enabled" to enabled,
             "weekdays" to weekdays,
+            "ringtoneId" to ringtoneId,
             "snoozeDurationMinutes" to snoozeDurationMinutes,
             "maxSnoozes" to maxSnoozes,
             "missionType" to missionType,
@@ -44,6 +46,7 @@ data class AlarmRecord(
             put("timezoneId", timezoneId)
             put("enabled", enabled)
             put("weekdays", JSONArray().apply { weekdays.forEach(::put) })
+            put("ringtoneId", ringtoneId)
             put("snoozeDurationMinutes", snoozeDurationMinutes)
             put("maxSnoozes", maxSnoozes)
             put("missionType", missionType)
@@ -63,6 +66,7 @@ data class AlarmRecord(
                 timezoneId = raw["timezoneId"] as String,
                 enabled = raw["enabled"] as Boolean,
                 weekdays = weekdaysRaw.mapNotNull { (it as? Number)?.toInt() }.sorted(),
+                ringtoneId = (raw["ringtoneId"] as? String) ?: "system_alarm",
                 snoozeDurationMinutes = (raw["snoozeDurationMinutes"] as Number).toInt(),
                 maxSnoozes = (raw["maxSnoozes"] as Number).toInt(),
                 missionType = raw["missionType"] as String,
@@ -95,6 +99,7 @@ data class AlarmRecord(
                 timezoneId = json.getString("timezoneId"),
                 enabled = json.getBoolean("enabled"),
                 weekdays = weekdays,
+                ringtoneId = json.optString("ringtoneId", "system_alarm"),
                 snoozeDurationMinutes = json.optInt("snoozeDurationMinutes", 9),
                 maxSnoozes = json.optInt("maxSnoozes", 3),
                 missionType = json.optString("missionType", "none"),

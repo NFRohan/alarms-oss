@@ -27,6 +27,52 @@ enum AlarmWeekday {
   }
 }
 
+enum AlarmRingtone {
+  systemAlarm('system_alarm', 'System alarm', 'Uses the device alarm sound.'),
+  systemNotification(
+    'system_notification',
+    'Notification tone',
+    'Uses the device notification sound.',
+  );
+
+  const AlarmRingtone(this.id, this.label, this.description);
+
+  final String id;
+  final String label;
+  final String description;
+
+  static AlarmRingtone fromId(String? value) {
+    return AlarmRingtone.values.firstWhere(
+      (ringtone) => ringtone.id == value,
+      orElse: () => AlarmRingtone.systemAlarm,
+    );
+  }
+}
+
+enum AlarmMissionType {
+  none('none', 'Direct dismiss', 'Dismiss button is immediately available.'),
+  math('math', 'Math mission', 'Mission engine lands next sprint.'),
+  steps(
+    'steps',
+    'Steps mission',
+    'Requires a step sensor and activity recognition.',
+  ),
+  qr('qr', 'QR mission', 'Requires a camera and camera permission.');
+
+  const AlarmMissionType(this.id, this.label, this.description);
+
+  final String id;
+  final String label;
+  final String description;
+
+  static AlarmMissionType fromId(String? value) {
+    return AlarmMissionType.values.firstWhere(
+      (missionType) => missionType.id == value,
+      orElse: () => AlarmMissionType.none,
+    );
+  }
+}
+
 class AlarmSpec {
   const AlarmSpec({
     required this.id,
@@ -36,6 +82,7 @@ class AlarmSpec {
     required this.timezoneId,
     required this.enabled,
     required this.weekdays,
+    required this.ringtone,
     required this.snoozeDurationMinutes,
     required this.maxSnoozes,
     required this.missionType,
@@ -53,9 +100,10 @@ class AlarmSpec {
       timezoneId: timezoneId,
       enabled: true,
       weekdays: const [],
+      ringtone: AlarmRingtone.systemAlarm,
       snoozeDurationMinutes: 9,
       maxSnoozes: 3,
-      missionType: 'none',
+      missionType: AlarmMissionType.none,
       nextTriggerAtUtc: null,
     );
   }
@@ -79,9 +127,10 @@ class AlarmSpec {
       timezoneId: raw['timezoneId']! as String,
       enabled: raw['enabled']! as bool,
       weekdays: weekdaysRaw,
+      ringtone: AlarmRingtone.fromId(raw['ringtoneId'] as String?),
       snoozeDurationMinutes: (raw['snoozeDurationMinutes'] as num).toInt(),
       maxSnoozes: (raw['maxSnoozes'] as num).toInt(),
-      missionType: raw['missionType']! as String,
+      missionType: AlarmMissionType.fromId(raw['missionType'] as String?),
       nextTriggerAtUtc: nextTriggerValue == null
           ? null
           : DateTime.parse(nextTriggerValue as String).toUtc(),
@@ -95,9 +144,10 @@ class AlarmSpec {
   final String timezoneId;
   final bool enabled;
   final List<AlarmWeekday> weekdays;
+  final AlarmRingtone ringtone;
   final int snoozeDurationMinutes;
   final int maxSnoozes;
-  final String missionType;
+  final AlarmMissionType missionType;
   final DateTime? nextTriggerAtUtc;
 
   DateTime? get nextTriggerAtLocal => nextTriggerAtUtc?.toLocal();
@@ -112,6 +162,10 @@ class AlarmSpec {
     return weekdays.map((weekday) => weekday.shortLabel).join(' ');
   }
 
+  String get ringtoneSummary => ringtone.label;
+
+  String get missionSummary => missionType.label;
+
   AlarmSpec copyWith({
     String? id,
     String? label,
@@ -120,9 +174,10 @@ class AlarmSpec {
     String? timezoneId,
     bool? enabled,
     List<AlarmWeekday>? weekdays,
+    AlarmRingtone? ringtone,
     int? snoozeDurationMinutes,
     int? maxSnoozes,
-    String? missionType,
+    AlarmMissionType? missionType,
     DateTime? nextTriggerAtUtc,
     bool clearNextTriggerAtUtc = false,
   }) {
@@ -137,6 +192,7 @@ class AlarmSpec {
       timezoneId: timezoneId ?? this.timezoneId,
       enabled: enabled ?? this.enabled,
       weekdays: weekdays == null ? this.weekdays : normalizedWeekdays,
+      ringtone: ringtone ?? this.ringtone,
       snoozeDurationMinutes:
           snoozeDurationMinutes ?? this.snoozeDurationMinutes,
       maxSnoozes: maxSnoozes ?? this.maxSnoozes,
@@ -156,9 +212,10 @@ class AlarmSpec {
       'timezoneId': timezoneId,
       'enabled': enabled,
       'weekdays': weekdays.map((weekday) => weekday.isoValue).toList(),
+      'ringtoneId': ringtone.id,
       'snoozeDurationMinutes': snoozeDurationMinutes,
       'maxSnoozes': maxSnoozes,
-      'missionType': missionType,
+      'missionType': missionType.id,
       'nextTriggerAtUtc': nextTriggerAtUtc?.toIso8601String(),
     };
   }

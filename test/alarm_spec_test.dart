@@ -15,9 +15,10 @@ void main() {
         AlarmWeekday.wednesday,
         AlarmWeekday.friday,
       ],
+      ringtone: AlarmRingtone.systemNotification,
       snoozeDurationMinutes: 9,
       maxSnoozes: 3,
-      missionType: 'none',
+      missionType: AlarmMissionType.none,
       nextTriggerAtUtc: DateTime.utc(2026, 3, 12, 1, 30),
     );
 
@@ -30,6 +31,8 @@ void main() {
     expect(roundTrip.timezoneId, original.timezoneId);
     expect(roundTrip.enabled, isTrue);
     expect(roundTrip.weekdays, original.weekdays);
+    expect(roundTrip.ringtone, original.ringtone);
+    expect(roundTrip.missionType, original.missionType);
     expect(roundTrip.nextTriggerAtUtc, original.nextTriggerAtUtc);
   });
 

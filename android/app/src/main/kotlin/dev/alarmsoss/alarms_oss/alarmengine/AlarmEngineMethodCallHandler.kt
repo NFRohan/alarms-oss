@@ -5,8 +5,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
@@ -23,6 +26,9 @@ class AlarmEngineMethodCallHandler(
     private val store = AlarmStore(appContext)
     private val ringSessionStore = RingSessionStore(appContext)
     private val scheduler = AlarmScheduler(appContext, store)
+    private val packageManager = appContext.packageManager
+    private val sensorManager = appContext.getSystemService(SensorManager::class.java)
+    private val powerManager = appContext.getSystemService(PowerManager::class.java)
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
@@ -32,6 +38,11 @@ class AlarmEngineMethodCallHandler(
                         "canScheduleExactAlarms" to scheduler.canScheduleExactAlarms(),
                         "notificationsEnabled" to NotificationManagerCompat.from(appContext)
                             .areNotificationsEnabled(),
+                        "batteryOptimizationIgnored" to isIgnoringBatteryOptimizations(),
+                        "hasCamera" to packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY),
+                        "cameraPermissionGranted" to isPermissionGranted(Manifest.permission.CAMERA),
+                        "hasStepSensor" to hasStepSensor(),
+                        "activityRecognitionGranted" to isActivityRecognitionGranted(),
                         "timezoneId" to ZoneId.systemDefault().id,
                     ),
                 )
@@ -100,17 +111,11 @@ class AlarmEngineMethodCallHandler(
 
                 "requestNotificationPermission" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val hostActivity = activity
-                            ?: throw IllegalStateException("Activity unavailable for notification permission request.")
-                        val granted = ContextCompat.checkSelfPermission(
-                            hostActivity,
-                            Manifest.permission.POST_NOTIFICATIONS,
-                        ) == PackageManager.PERMISSION_GRANTED
+                        val granted = isPermissionGranted(Manifest.permission.POST_NOTIFICATIONS)
 
                         if (!granted) {
-                            ActivityCompat.requestPermissions(
-                                hostActivity,
-                                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                            requestRuntimePermission(
+                                Manifest.permission.POST_NOTIFICATIONS,
                                 REQUEST_NOTIFICATIONS_CODE,
                             )
                         }
@@ -125,6 +130,49 @@ class AlarmEngineMethodCallHandler(
                     result.success(null)
                 }
 
+                "requestBatteryOptimizationExemption" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                        !isIgnoringBatteryOptimizations()
+                    ) {
+                        appContext.startActivity(
+                            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                data = Uri.parse("package:${appContext.packageName}")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            },
+                        )
+                    }
+                    result.success(null)
+                }
+
+                "requestCameraPermission" -> {
+                    if (!packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+                        result.success(null)
+                        return
+                    }
+
+                    if (!isPermissionGranted(Manifest.permission.CAMERA)) {
+                        requestRuntimePermission(Manifest.permission.CAMERA, REQUEST_CAMERA_CODE)
+                    }
+                    result.success(null)
+                }
+
+                "requestActivityRecognitionPermission" -> {
+                    if (!hasStepSensor()) {
+                        result.success(null)
+                        return
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                        !isPermissionGranted(Manifest.permission.ACTIVITY_RECOGNITION)
+                    ) {
+                        requestRuntimePermission(
+                            Manifest.permission.ACTIVITY_RECOGNITION,
+                            REQUEST_ACTIVITY_RECOGNITION_CODE,
+                        )
+                    }
+                    result.success(null)
+                }
+
                 else -> result.notImplemented()
             }
         } catch (error: ExactAlarmPermissionException) {
@@ -134,7 +182,47 @@ class AlarmEngineMethodCallHandler(
         }
     }
 
+    private fun hasStepSensor(): Boolean {
+        return sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+    }
+
+    private fun isActivityRecognitionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            isPermissionGranted(Manifest.permission.ACTIVITY_RECOGNITION)
+        } else {
+            true
+        }
+    }
+
+    private fun isPermissionGranted(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(
+            appContext,
+            permission,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            powerManager.isIgnoringBatteryOptimizations(appContext.packageName)
+        } else {
+            true
+        }
+    }
+
+    private fun requestRuntimePermission(permission: String, requestCode: Int) {
+        val hostActivity = activity
+            ?: throw IllegalStateException("Activity unavailable for permission request.")
+
+        ActivityCompat.requestPermissions(
+            hostActivity,
+            arrayOf(permission),
+            requestCode,
+        )
+    }
+
     companion object {
+        private const val REQUEST_ACTIVITY_RECOGNITION_CODE = 1003
+        private const val REQUEST_CAMERA_CODE = 1002
         private const val REQUEST_NOTIFICATIONS_CODE = 1001
     }
 }

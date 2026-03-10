@@ -34,6 +34,21 @@ class NativeAlarmRepository implements AlarmRepository {
   }
 
   @override
+  Future<void> requestBatteryOptimizationExemption() {
+    return _channel.invokeMethod<void>('requestBatteryOptimizationExemption');
+  }
+
+  @override
+  Future<void> requestCameraPermission() {
+    return _channel.invokeMethod<void>('requestCameraPermission');
+  }
+
+  @override
+  Future<void> requestActivityRecognitionPermission() {
+    return _channel.invokeMethod<void>('requestActivityRecognitionPermission');
+  }
+
+  @override
   Future<void> requestExactAlarmPermission() {
     return _channel.invokeMethod<void>('requestExactAlarmPermission');
   }
