@@ -5,7 +5,8 @@ import org.json.JSONObject
 
 class RingSessionStore(context: Context) {
     private val prefs =
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        alarmEngineStorageContext(context)
+            .getSharedPreferences(ALARM_ENGINE_PREFS_NAME, Context.MODE_PRIVATE)
 
     fun get(): AlarmRingSession? {
         val raw = prefs.getString(KEY_ACTIVE_SESSION, null) ?: return null
@@ -21,7 +22,6 @@ class RingSessionStore(context: Context) {
     }
 
     companion object {
-        private const val PREFS_NAME = "alarm_engine_store"
         private const val KEY_ACTIVE_SESSION = "active_ring_session"
     }
 }

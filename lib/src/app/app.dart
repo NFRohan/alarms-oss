@@ -1,6 +1,7 @@
 import 'package:alarms_oss/src/core/theme/app_theme.dart';
 import 'package:alarms_oss/src/features/alarms/application/active_alarm_session_controller.dart';
 import 'package:alarms_oss/src/features/alarms/presentation/active_alarm_screen.dart';
+import 'package:alarms_oss/src/features/app_startup/application/app_startup_controller.dart';
 import 'package:alarms_oss/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,24 +44,50 @@ class _AlarmAppShellState extends ConsumerState<_AlarmAppShell>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      ref.invalidate(appStartupContextProvider);
       ref.read(activeAlarmSessionControllerProvider).refresh();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final startupContext = ref.watch(appStartupContextProvider);
     final session = ref.watch(activeAlarmSessionProvider);
 
-    return session.when(
-      data: (session) {
-        if (session != null) {
-          return ActiveAlarmScreen(session: session);
-        }
+    return startupContext.when(
+      data: (startupContext) {
+        return session.when(
+          data: (session) {
+            if (session != null) {
+              return ActiveAlarmScreen(session: session);
+            }
 
-        return const DashboardScreen();
+            if (startupContext.isDirectBootMode) {
+              return const _DirectBootScreen();
+            }
+
+            return const DashboardScreen();
+          },
+          loading: () => const _AppLoadingScreen(),
+          error: (error, stackTrace) {
+            if (startupContext.isDirectBootMode) {
+              return const _DirectBootScreen();
+            }
+            return const DashboardScreen();
+          },
+        );
       },
       loading: () => const _AppLoadingScreen(),
-      error: (error, stackTrace) => const DashboardScreen(),
+      error: (error, stackTrace) => session.when(
+        data: (session) {
+          if (session != null) {
+            return ActiveAlarmScreen(session: session);
+          }
+          return const _DirectBootScreen();
+        },
+        loading: () => const _AppLoadingScreen(),
+        error: (error, stackTrace) => const _DirectBootScreen(),
+      ),
     );
   }
 }
@@ -71,5 +98,50 @@ class _AppLoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+}
+
+class _DirectBootScreen extends StatelessWidget {
+  const _DirectBootScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: DecoratedBox(
+              decoration: neoPanelDecoration(color: NeoColors.panel),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DIRECT BOOT MODE',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Alarm-critical recovery is available before first unlock, but the full app stays locked down until Android reports the user as unlocked.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Unlock the device to load the full dashboard and any nonessential startup work.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

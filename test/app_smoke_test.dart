@@ -5,6 +5,7 @@ import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart'
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
+import 'package:alarms_oss/src/features/app_startup/domain/app_startup_context.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,9 +24,34 @@ void main() {
     expect(find.text('ALRM'), findsOneWidget);
     expect(find.text('READY TO RING'), findsOneWidget);
   });
+
+  testWidgets('renders direct-boot-safe shell before unlock', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          alarmRepositoryProvider.overrideWithValue(
+            _FakeAlarmRepository(
+              startupContext: const AppStartupContext(userUnlocked: false),
+            ),
+          ),
+        ],
+        child: const AlarmApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('DIRECT BOOT MODE'), findsOneWidget);
+    expect(find.textContaining('Unlock the device'), findsOneWidget);
+  });
 }
 
 class _FakeAlarmRepository implements AlarmRepository {
+  _FakeAlarmRepository({
+    this.startupContext = const AppStartupContext(userUnlocked: true),
+  });
+
+  final AppStartupContext startupContext;
+
   @override
   Future<void> deleteAlarm(String id) async {}
 
@@ -58,6 +84,11 @@ class _FakeAlarmRepository implements AlarmRepository {
       activityRecognitionGranted: false,
       timezoneId: 'UTC',
     );
+  }
+
+  @override
+  Future<AppStartupContext> getStartupContext() async {
+    return startupContext;
   }
 
   @override

@@ -47,6 +47,11 @@ class ActiveAlarmSessionController {
     _ref.invalidate(activeAlarmSessionProvider);
   }
 
+  Future<void> requestCameraPermission() async {
+    await _repository.requestCameraPermission();
+    _ref.invalidate(activeAlarmSessionProvider);
+  }
+
   Future<MathAnswerSubmissionResult> submitMathAnswer(String answer) async {
     final result = await _repository.submitMathAnswer(answer);
     _ref.invalidate(activeAlarmSessionProvider);

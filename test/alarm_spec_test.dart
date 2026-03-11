@@ -38,7 +38,10 @@ void main() {
     expect(roundTrip.ringtone, original.ringtone);
     expect(roundTrip.mission.type, original.mission.type);
     expect(roundTrip.mission.mathDifficulty, original.mission.mathDifficulty);
-    expect(roundTrip.mission.mathProblemCount, original.mission.mathProblemCount);
+    expect(
+      roundTrip.mission.mathProblemCount,
+      original.mission.mathProblemCount,
+    );
     expect(roundTrip.nextTriggerAtUtc, original.nextTriggerAtUtc);
   });
 
@@ -68,5 +71,28 @@ void main() {
 
     expect(roundTrip.mission.type, AlarmMissionType.steps);
     expect(roundTrip.mission.stepGoal, 50);
+  });
+
+  test('serializes and deserializes QR mission config', () {
+    final original = AlarmSpec(
+      id: 'alarm-3',
+      label: 'Bathroom QR',
+      hour: 8,
+      minute: 15,
+      timezoneId: 'UTC',
+      enabled: true,
+      weekdays: const [],
+      ringtone: AlarmRingtone.systemAlarm,
+      snoozeDurationMinutes: 9,
+      maxSnoozes: 0,
+      mission: const MissionSpec.qr(targetValue: 'sink-qr-target'),
+      nextTriggerAtUtc: null,
+    );
+
+    final roundTrip = AlarmSpec.fromMap(original.toMap());
+
+    expect(roundTrip.mission.type, AlarmMissionType.qr);
+    expect(roundTrip.mission.qrTargetValue, 'sink-qr-target');
+    expect(roundTrip.mission.hasQrTarget, isTrue);
   });
 }

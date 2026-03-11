@@ -3,6 +3,7 @@ import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart'
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
+import 'package:alarms_oss/src/features/app_startup/domain/app_startup_context.dart';
 import 'package:flutter/services.dart';
 
 class NativeAlarmRepository implements AlarmRepository {
@@ -14,6 +15,14 @@ class NativeAlarmRepository implements AlarmRepository {
   Future<AlarmEngineStatus> getStatus() async {
     final raw = await _channel.invokeMapMethod<Object?, Object?>('getStatus');
     return AlarmEngineStatus.fromMap(raw ?? const {});
+  }
+
+  @override
+  Future<AppStartupContext> getStartupContext() async {
+    final raw = await _channel.invokeMapMethod<Object?, Object?>(
+      'getStartupContext',
+    );
+    return AppStartupContext.fromMap(raw ?? const {});
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
 import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:alarms_oss/src/features/app_startup/domain/app_startup_context.dart';
 
 abstract class AlarmRepository {
   Future<List<AlarmSpec>> listAlarms();
@@ -18,6 +19,8 @@ abstract class AlarmRepository {
   Future<void> rescheduleAll();
 
   Future<AlarmEngineStatus> getStatus();
+
+  Future<AppStartupContext> getStartupContext();
 
   Future<ActiveAlarmSession?> getActiveAlarmSession();
 

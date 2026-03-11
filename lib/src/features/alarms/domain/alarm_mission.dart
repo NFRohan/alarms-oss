@@ -3,6 +3,7 @@ const maxMathMissionProblemCount = 5;
 const defaultStepMissionGoal = 30;
 const minStepMissionGoal = 10;
 const maxStepMissionGoal = 100;
+const minQrTargetLength = 1;
 
 int _normalizeMathMissionProblemCount(int? value) {
   final resolved = value ?? minMathMissionProblemCount;
@@ -14,6 +15,14 @@ int _normalizeMathMissionProblemCount(int? value) {
 int _normalizeStepMissionGoal(int? value) {
   final resolved = value ?? defaultStepMissionGoal;
   return resolved.clamp(minStepMissionGoal, maxStepMissionGoal).toInt();
+}
+
+String? _normalizeQrTargetValue(String? value) {
+  final resolved = value?.trim();
+  if (resolved == null || resolved.isEmpty) {
+    return null;
+  }
+  return resolved.length >= minQrTargetLength ? resolved : null;
 }
 
 enum AlarmMissionType {
@@ -64,6 +73,7 @@ class MissionSpec {
     this.mathDifficulty = MathMissionDifficulty.standard,
     this.mathProblemCount = minMathMissionProblemCount,
     this.stepGoal = defaultStepMissionGoal,
+    this.qrTargetValue,
   }) : assert(
          type != AlarmMissionType.math ||
              (mathProblemCount >= minMathMissionProblemCount &&
@@ -71,8 +81,12 @@ class MissionSpec {
        ),
        assert(
          type != AlarmMissionType.steps ||
-             (stepGoal >= minStepMissionGoal &&
-                 stepGoal <= maxStepMissionGoal),
+             (stepGoal >= minStepMissionGoal && stepGoal <= maxStepMissionGoal),
+       ),
+       assert(
+         type != AlarmMissionType.qr ||
+             qrTargetValue == null ||
+             qrTargetValue.length >= minQrTargetLength,
        );
 
   const MissionSpec.none() : this(type: AlarmMissionType.none);
@@ -89,7 +103,8 @@ class MissionSpec {
   const MissionSpec.steps({int goal = defaultStepMissionGoal})
     : this(type: AlarmMissionType.steps, stepGoal: goal);
 
-  const MissionSpec.qr() : this(type: AlarmMissionType.qr);
+  const MissionSpec.qr({String? targetValue})
+    : this(type: AlarmMissionType.qr, qrTargetValue: targetValue);
 
   factory MissionSpec.fromMap(
     Map<Object?, Object?>? raw, {
@@ -113,7 +128,9 @@ class MissionSpec {
       AlarmMissionType.steps => MissionSpec.steps(
         goal: _normalizeStepMissionGoal((config?['goal'] as num?)?.toInt()),
       ),
-      AlarmMissionType.qr => const MissionSpec.qr(),
+      AlarmMissionType.qr => MissionSpec.qr(
+        targetValue: _normalizeQrTargetValue(config?['targetValue'] as String?),
+      ),
     };
   }
 
@@ -121,8 +138,13 @@ class MissionSpec {
   final MathMissionDifficulty mathDifficulty;
   final int mathProblemCount;
   final int stepGoal;
+  final String? qrTargetValue;
 
   bool get isDirectDismiss => type == AlarmMissionType.none;
+
+  bool get hasQrTarget =>
+      (qrTargetValue?.trim().isNotEmpty ?? false) &&
+      type == AlarmMissionType.qr;
 
   String get summary {
     return switch (type) {
@@ -130,7 +152,10 @@ class MissionSpec {
       AlarmMissionType.math =>
         '${type.label} - ${mathDifficulty.label} - $mathProblemCount ${mathProblemCount == 1 ? 'problem' : 'problems'}',
       AlarmMissionType.steps => '${type.label} - $stepGoal steps',
-      AlarmMissionType.qr => type.label,
+      AlarmMissionType.qr =>
+        hasQrTarget
+            ? '${type.label} - target saved'
+            : '${type.label} - target missing',
     };
   }
 
@@ -143,6 +168,9 @@ class MissionSpec {
           'problemCount': mathProblemCount,
         },
         AlarmMissionType.steps => {'goal': stepGoal},
+        AlarmMissionType.qr => {
+          'targetValue': _normalizeQrTargetValue(qrTargetValue),
+        },
         _ => <String, Object?>{},
       },
     };
@@ -153,6 +181,7 @@ class MissionSpec {
     MathMissionDifficulty? mathDifficulty,
     int? mathProblemCount,
     int? stepGoal,
+    String? qrTargetValue,
   }) {
     final resolvedType = type ?? this.type;
     return switch (resolvedType) {
@@ -166,7 +195,11 @@ class MissionSpec {
       AlarmMissionType.steps => MissionSpec.steps(
         goal: _normalizeStepMissionGoal(stepGoal ?? this.stepGoal),
       ),
-      AlarmMissionType.qr => const MissionSpec.qr(),
+      AlarmMissionType.qr => MissionSpec.qr(
+        targetValue:
+            _normalizeQrTargetValue(qrTargetValue) ??
+            _normalizeQrTargetValue(this.qrTargetValue),
+      ),
     };
   }
 }
@@ -239,6 +272,25 @@ enum StepMissionTrackingState {
   }
 }
 
+enum QrMissionTrackingState {
+  awaitingScan('awaiting_scan'),
+  tracking('tracking'),
+  targetMissing('target_missing'),
+  missingPermission('missing_permission'),
+  unsupportedCamera('unsupported_camera');
+
+  const QrMissionTrackingState(this.id);
+
+  final String id;
+
+  static QrMissionTrackingState fromId(String? value) {
+    return QrMissionTrackingState.values.firstWhere(
+      (state) => state.id == value,
+      orElse: () => QrMissionTrackingState.awaitingScan,
+    );
+  }
+}
+
 class MathChallengeSnapshot {
   const MathChallengeSnapshot({
     required this.leftOperand,
@@ -287,9 +339,8 @@ class StepProgressSnapshot {
   final int targetSteps;
   final StepMissionTrackingState trackingState;
 
-  int get remainingSteps => (targetSteps - completedSteps)
-      .clamp(0, targetSteps)
-      .toInt();
+  int get remainingSteps =>
+      (targetSteps - completedSteps).clamp(0, targetSteps).toInt();
 
   bool get isAwaitingSteps =>
       trackingState == StepMissionTrackingState.awaitingSteps;
@@ -310,6 +361,39 @@ class StepProgressSnapshot {
   }
 }
 
+class QrProgressSnapshot {
+  const QrProgressSnapshot({
+    required this.trackingState,
+    required this.targetConfigured,
+  });
+
+  factory QrProgressSnapshot.fromMap(Map<Object?, Object?> raw) {
+    return QrProgressSnapshot(
+      trackingState: QrMissionTrackingState.fromId(
+        raw['trackingState'] as String?,
+      ),
+      targetConfigured: raw['targetConfigured'] as bool? ?? false,
+    );
+  }
+
+  final QrMissionTrackingState trackingState;
+  final bool targetConfigured;
+
+  bool get isAwaitingScan =>
+      trackingState == QrMissionTrackingState.awaitingScan;
+
+  bool get isTracking => trackingState == QrMissionTrackingState.tracking;
+
+  bool get isTargetMissing =>
+      trackingState == QrMissionTrackingState.targetMissing;
+
+  bool get isPermissionBlocked =>
+      trackingState == QrMissionTrackingState.missingPermission;
+
+  bool get isUnsupported =>
+      trackingState == QrMissionTrackingState.unsupportedCamera;
+}
+
 class ActiveMissionSnapshot {
   const ActiveMissionSnapshot({
     required this.spec,
@@ -318,6 +402,7 @@ class ActiveMissionSnapshot {
     required this.targetProblemCount,
     this.mathChallenge,
     this.stepProgress,
+    this.qrProgress,
   });
 
   factory ActiveMissionSnapshot.fromMap(Map<Object?, Object?>? raw) {
@@ -326,6 +411,7 @@ class ActiveMissionSnapshot {
     final challengeRaw = missionRaw['mathChallenge'] as Map<Object?, Object?>?;
     final stepProgressRaw =
         missionRaw['stepProgress'] as Map<Object?, Object?>?;
+    final qrProgressRaw = missionRaw['qrProgress'] as Map<Object?, Object?>?;
     final spec = MissionSpec.fromMap(missionRaw);
 
     return ActiveMissionSnapshot(
@@ -353,6 +439,17 @@ class ActiveMissionSnapshot {
                   },
             )
           : null,
+      qrProgress: spec.type == AlarmMissionType.qr
+          ? QrProgressSnapshot.fromMap(
+              qrProgressRaw ??
+                  <Object?, Object?>{
+                    'trackingState': spec.hasQrTarget
+                        ? QrMissionTrackingState.awaitingScan.id
+                        : QrMissionTrackingState.targetMissing.id,
+                    'targetConfigured': spec.hasQrTarget,
+                  },
+            )
+          : null,
     );
   }
 
@@ -362,10 +459,13 @@ class ActiveMissionSnapshot {
   final int targetProblemCount;
   final MathChallengeSnapshot? mathChallenge;
   final StepProgressSnapshot? stepProgress;
+  final QrProgressSnapshot? qrProgress;
 
   bool get isCompleted => status == ActiveMissionStatus.completed;
 
   bool get hasMultipleProblems => targetProblemCount > 1;
+
+  bool get isQrMissionReady => qrProgress?.targetConfigured ?? false;
 
   int get currentProblemNumber {
     if (targetProblemCount <= 0) {

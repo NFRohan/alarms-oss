@@ -2,6 +2,7 @@ import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
 import 'package:alarms_oss/src/features/missions/presentation/math_mission_runner.dart';
+import 'package:alarms_oss/src/features/missions/presentation/qr_mission_runner.dart';
 import 'package:alarms_oss/src/features/missions/presentation/steps_mission_runner.dart';
 import 'package:alarms_oss/src/platform/missions/mission_driver.dart';
 import 'package:flutter/widgets.dart';
@@ -12,7 +13,7 @@ final missionRegistryProvider = Provider<MissionRegistry>((ref) {
     _DirectDismissMissionDriver(),
     MathMissionDriver(),
     StepsMissionDriver(),
-    _UnsupportedMissionDriver(type: AlarmMissionType.qr),
+    QrMissionDriver(),
   ]);
 });
 
@@ -42,7 +43,7 @@ class MissionRegistry {
       AlarmMissionType.none => true,
       AlarmMissionType.math => true,
       AlarmMissionType.steps => diagnostics?.stepsMissionReady ?? false,
-      AlarmMissionType.qr => false,
+      AlarmMissionType.qr => diagnostics?.cameraReady ?? false,
     };
   }
 }
@@ -52,22 +53,6 @@ class _DirectDismissMissionDriver implements MissionDriver {
 
   @override
   AlarmMissionType get type => AlarmMissionType.none;
-
-  @override
-  Widget buildRunner({
-    required BuildContext context,
-    required ActiveAlarmSession session,
-    required MissionActionCallbacks actions,
-  }) {
-    return const SizedBox.shrink();
-  }
-}
-
-class _UnsupportedMissionDriver implements MissionDriver {
-  const _UnsupportedMissionDriver({required this.type});
-
-  @override
-  final AlarmMissionType type;
 
   @override
   Widget buildRunner({

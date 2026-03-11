@@ -10,6 +10,7 @@ import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
+import android.os.UserManager
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
@@ -33,6 +34,7 @@ class AlarmEngineMethodCallHandler(
     private val packageManager = appContext.packageManager
     private val sensorManager = appContext.getSystemService(SensorManager::class.java)
     private val powerManager = appContext.getSystemService(PowerManager::class.java)
+    private val userManager = appContext.getSystemService(UserManager::class.java)
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
@@ -48,6 +50,12 @@ class AlarmEngineMethodCallHandler(
                         "hasStepSensor" to hasStepSensor(),
                         "activityRecognitionGranted" to isActivityRecognitionGranted(),
                         "timezoneId" to ZoneId.systemDefault().id,
+                    ),
+                )
+
+                "getStartupContext" -> result.success(
+                    mapOf(
+                        "userUnlocked" to isUserUnlocked(),
                     ),
                 )
 
@@ -224,7 +232,11 @@ class AlarmEngineMethodCallHandler(
                     }
 
                     if (!isPermissionGranted(Manifest.permission.CAMERA)) {
-                        requestRuntimePermission(Manifest.permission.CAMERA, REQUEST_CAMERA_CODE)
+                        requestRuntimePermissionOrOpenSettings(
+                            Manifest.permission.CAMERA,
+                            REQUEST_CAMERA_CODE,
+                            KEY_CAMERA_REQUESTED,
+                        )
                     }
                     result.success(null)
                 }
@@ -290,6 +302,14 @@ class AlarmEngineMethodCallHandler(
         }
     }
 
+    private fun isUserUnlocked(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            userManager?.isUserUnlocked ?: true
+        } else {
+            true
+        }
+    }
+
     private fun requestRuntimePermission(permission: String, requestCode: Int) {
         val hostActivity = activity
             ?: throw IllegalStateException("Activity unavailable for permission request.")
@@ -336,6 +356,7 @@ class AlarmEngineMethodCallHandler(
 
     companion object {
         private const val KEY_ACTIVITY_RECOGNITION_REQUESTED = "activity_recognition_requested"
+        private const val KEY_CAMERA_REQUESTED = "camera_requested"
         private const val PERMISSION_PREFS_NAME = "alarm_engine_permission_prompts"
         private const val REQUEST_ACTIVITY_RECOGNITION_CODE = 1003
         private const val REQUEST_CAMERA_CODE = 1002

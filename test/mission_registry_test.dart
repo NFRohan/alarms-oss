@@ -28,7 +28,11 @@ void main() {
 
     expect(
       registry.editorMissionTypes(diagnostics: diagnostics),
-      equals([AlarmMissionType.none, AlarmMissionType.math]),
+      equals([
+        AlarmMissionType.none,
+        AlarmMissionType.math,
+        AlarmMissionType.qr,
+      ]),
     );
   });
 
@@ -52,10 +56,33 @@ void main() {
           AlarmMissionType.none,
           AlarmMissionType.math,
           AlarmMissionType.steps,
+          AlarmMissionType.qr,
         ]),
       );
     },
   );
+
+  test('hides QR from the editor when camera permission is denied', () {
+    const diagnostics = AlarmEngineStatus(
+      canScheduleExactAlarms: true,
+      notificationsEnabled: true,
+      batteryOptimizationIgnored: true,
+      hasCamera: true,
+      cameraPermissionGranted: false,
+      hasStepSensor: true,
+      activityRecognitionGranted: true,
+      timezoneId: 'UTC',
+    );
+
+    expect(
+      registry.editorMissionTypes(diagnostics: diagnostics),
+      equals([
+        AlarmMissionType.none,
+        AlarmMissionType.math,
+        AlarmMissionType.steps,
+      ]),
+    );
+  });
 }
 
 class _TestMissionDriver implements MissionDriver {

@@ -16,6 +16,14 @@ enum class StepMissionTrackingState(val id: String) {
     UNSUPPORTED_SENSOR("unsupported_sensor"),
 }
 
+enum class QrMissionTrackingState(val id: String) {
+    AWAITING_SCAN("awaiting_scan"),
+    TRACKING("tracking"),
+    TARGET_MISSING("target_missing"),
+    MISSING_PERMISSION("missing_permission"),
+    UNSUPPORTED_CAMERA("unsupported_camera"),
+}
+
 data class MathChallengeState(
     val leftOperand: Int,
     val rightOperand: Int,
@@ -196,6 +204,37 @@ data class StepMissionProgressState(
     }
 }
 
+data class QrMissionProgressState(
+    val trackingState: String,
+    val targetConfigured: Boolean,
+) {
+    fun toChannelMap(): Map<String, Any> {
+        return mapOf(
+            "trackingState" to trackingState,
+            "targetConfigured" to targetConfigured,
+        )
+    }
+
+    fun toJson(): JSONObject {
+        return JSONObject().apply {
+            put("trackingState", trackingState)
+            put("targetConfigured", targetConfigured)
+        }
+    }
+
+    companion object {
+        fun fromJson(json: JSONObject): QrMissionProgressState {
+            return QrMissionProgressState(
+                trackingState = json.optString(
+                    "trackingState",
+                    QrMissionTrackingState.AWAITING_SCAN.id,
+                ),
+                targetConfigured = json.optBoolean("targetConfigured", false),
+            )
+        }
+    }
+}
+
 data class AlarmMissionRuntime(
     val spec: MissionSpec,
     val status: String,
@@ -203,6 +242,7 @@ data class AlarmMissionRuntime(
     val targetProblemCount: Int,
     val mathChallenge: MathChallengeState?,
     val stepProgress: StepMissionProgressState?,
+    val qrProgress: QrMissionProgressState?,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return buildMap {
@@ -212,6 +252,7 @@ data class AlarmMissionRuntime(
             put("targetProblemCount", targetProblemCount)
             put("mathChallenge", mathChallenge?.toChannelMap())
             put("stepProgress", stepProgress?.toChannelMap())
+            put("qrProgress", qrProgress?.toChannelMap())
         }
     }
 
@@ -222,6 +263,7 @@ data class AlarmMissionRuntime(
             put("targetProblemCount", targetProblemCount)
             put("mathChallenge", mathChallenge?.toJson())
             put("stepProgress", stepProgress?.toJson())
+            put("qrProgress", qrProgress?.toJson())
         }
     }
 
@@ -288,6 +330,30 @@ data class AlarmMissionRuntime(
         )
     }
 
+    fun withQrTrackingState(nextState: QrMissionTrackingState): AlarmMissionRuntime {
+        if (spec.type != MissionSpec.TYPE_QR) {
+            return this
+        }
+
+        val resolvedQrProgress = qrProgress ?: defaultQrProgress(spec)
+        return copy(
+            qrProgress = resolvedQrProgress.copy(trackingState = nextState.id),
+        )
+    }
+
+    fun completeQrMission(): AlarmMissionRuntime {
+        if (spec.type != MissionSpec.TYPE_QR) {
+            return this
+        }
+
+        return copy(
+            status = STATUS_COMPLETED,
+            qrProgress = (qrProgress ?: defaultQrProgress(spec)).copy(
+                trackingState = QrMissionTrackingState.TRACKING.id,
+            ),
+        )
+    }
+
     companion object {
         const val STATUS_PENDING = "pending"
         const val STATUS_COMPLETED = "completed"
@@ -301,6 +367,7 @@ data class AlarmMissionRuntime(
                     targetProblemCount = 0,
                     mathChallenge = null,
                     stepProgress = null,
+                    qrProgress = null,
                 )
 
                 MissionSpec.TYPE_MATH -> {
@@ -315,6 +382,7 @@ data class AlarmMissionRuntime(
                             spec.mathDifficultyId ?: MissionSpec.DEFAULT_MATH_DIFFICULTY,
                         ),
                         stepProgress = null,
+                        qrProgress = null,
                     )
                 }
 
@@ -325,6 +393,17 @@ data class AlarmMissionRuntime(
                     targetProblemCount = 0,
                     mathChallenge = null,
                     stepProgress = defaultStepProgress(spec),
+                    qrProgress = null,
+                )
+
+                MissionSpec.TYPE_QR -> AlarmMissionRuntime(
+                    spec = spec,
+                    status = STATUS_PENDING,
+                    solvedProblemCount = 0,
+                    targetProblemCount = 0,
+                    mathChallenge = null,
+                    stepProgress = null,
+                    qrProgress = defaultQrProgress(spec),
                 )
 
                 else -> AlarmMissionRuntime(
@@ -334,6 +413,7 @@ data class AlarmMissionRuntime(
                     targetProblemCount = 0,
                     mathChallenge = null,
                     stepProgress = null,
+                    qrProgress = null,
                 )
             }
         }
@@ -342,6 +422,7 @@ data class AlarmMissionRuntime(
             val spec = MissionSpec.fromJson(json)
             val challengeJson = json.optJSONObject("mathChallenge")
             val stepProgressJson = json.optJSONObject("stepProgress")
+            val qrProgressJson = json.optJSONObject("qrProgress")
             val targetProblemCount = when (spec.type) {
                 MissionSpec.TYPE_MATH -> MissionSpec.normalizeMathProblemCount(
                     if (json.has("targetProblemCount")) {
@@ -367,6 +448,11 @@ data class AlarmMissionRuntime(
                         ?: defaultStepProgress(spec)
                     else -> null
                 },
+                qrProgress = when (spec.type) {
+                    MissionSpec.TYPE_QR -> qrProgressJson?.let(QrMissionProgressState::fromJson)
+                        ?: defaultQrProgress(spec)
+                    else -> null
+                },
             )
         }
 
@@ -375,6 +461,18 @@ data class AlarmMissionRuntime(
                 completedSteps = 0,
                 targetSteps = MissionSpec.normalizeStepGoal(spec.stepGoal),
                 trackingState = StepMissionTrackingState.AWAITING_STEPS.id,
+            )
+        }
+
+        private fun defaultQrProgress(spec: MissionSpec): QrMissionProgressState {
+            val targetConfigured = MissionSpec.normalizeQrTargetValue(spec.qrTargetValue) != null
+            return QrMissionProgressState(
+                trackingState = if (targetConfigured) {
+                    QrMissionTrackingState.AWAITING_SCAN.id
+                } else {
+                    QrMissionTrackingState.TARGET_MISSING.id
+                },
+                targetConfigured = targetConfigured,
             )
         }
     }

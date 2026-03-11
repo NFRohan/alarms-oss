@@ -3,6 +3,7 @@ import 'package:alarms_oss/src/core/ui/neo_brutal_widgets.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
+import 'package:alarms_oss/src/features/alarms/presentation/qr_target_capture_screen.dart';
 import 'package:alarms_oss/src/features/missions/application/mission_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,14 +53,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
     _ringtone = widget.alarm.ringtone;
     _snoozeDurationMinutes = widget.alarm.snoozeDurationMinutes;
     _maxSnoozes = widget.alarm.maxSnoozes;
-    final missionRegistry = ref.read(missionRegistryProvider);
-    _mission =
-        missionRegistry.isConfigurableForEditor(
-          widget.alarm.mission.type,
-          diagnostics: widget.engineStatus,
-        )
-        ? widget.alarm.mission
-        : const MissionSpec.none();
+    _mission = widget.alarm.mission;
   }
 
   @override
@@ -74,9 +68,18 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
     final mediaQuery = MediaQuery.of(context);
     final diagnostics = widget.engineStatus;
     final missionRegistry = ref.read(missionRegistryProvider);
-    final missionTypes = missionRegistry.editorMissionTypes(
+    final availableMissionTypes = missionRegistry.editorMissionTypes(
       diagnostics: diagnostics,
     );
+    final missionTypes = [
+      ...availableMissionTypes,
+      if (!missionRegistry.isConfigurableForEditor(
+            _mission.type,
+            diagnostics: diagnostics,
+          ) &&
+          !availableMissionTypes.contains(_mission.type))
+        _mission.type,
+    ];
     final amPmLabel = _time.period == DayPeriod.am ? 'AM' : 'PM';
 
     return FractionallySizedBox(
@@ -305,6 +308,15 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                               'Grant or re-enable activity recognition from Settings > Device readiness before steps alarms can be configured.',
                         ),
                       ],
+                      if ((diagnostics?.hasCamera ?? false) &&
+                          !(diagnostics?.cameraPermissionGranted ?? true)) ...[
+                        const SizedBox(height: 12),
+                        const _EditorWarning(
+                          title: 'QR mission hidden',
+                          detail:
+                              'Grant or re-enable camera permission from Settings > Device readiness before QR-backed alarms can be configured.',
+                        ),
+                      ],
                       if (_mission.type == AlarmMissionType.math) ...[
                         const SizedBox(height: 14),
                         _EditorSelector(
@@ -400,6 +412,62 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                             },
                           ),
                         ),
+                      ] else if (_mission.type == AlarmMissionType.qr) ...[
+                        const SizedBox(height: 14),
+                        NeoPanel(
+                          color: NeoColors.panel,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'TARGET QR',
+                                style: theme.textTheme.labelMedium,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                _mission.hasQrTarget
+                                    ? 'A QR target is saved for this alarm.'
+                                    : 'Scan the QR code this alarm should require before saving.',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                              if (_mission.hasQrTarget) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  _mission.qrTargetValue!,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                              ],
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: NeoActionButton(
+                                      label: _mission.hasQrTarget
+                                          ? 'Replace target'
+                                          : 'Scan target',
+                                      backgroundColor: NeoColors.cyan,
+                                      onPressed: _captureQrTarget,
+                                    ),
+                                  ),
+                                  if (_mission.hasQrTarget) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: NeoActionButton(
+                                        label: 'Clear target',
+                                        backgroundColor: NeoColors.warm,
+                                        onPressed: () {
+                                          setState(() {
+                                            _mission = const MissionSpec.qr();
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                       const SizedBox(height: 18),
                       Text('MAX SNOOZES', style: theme.textTheme.titleMedium),
@@ -469,6 +537,15 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
   }
 
   void _save() {
+    if (_mission.type == AlarmMissionType.qr && !_mission.hasQrTarget) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Scan a target QR code before saving this alarm.'),
+        ),
+      );
+      return;
+    }
+
     final normalizedWeekdays = _selectedWeekdays.toList()
       ..sort((left, right) => left.isoValue.compareTo(right.isoValue));
 
@@ -522,11 +599,27 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
         detail: !((diagnostics?.hasCamera) ?? false)
             ? 'This device does not report camera availability.'
             : !((diagnostics?.cameraPermissionGranted) ?? false)
-            ? 'Grant camera permission from diagnostics before this mission can be enabled later.'
-            : 'Camera prerequisites look good. Native vision runtime lands in Sprint 7.',
-        enabled: false,
+            ? 'Grant or re-enable camera permission from Settings before saving a QR-backed alarm.'
+            : 'Scan a saved QR target to dismiss the alarm.',
+        enabled: diagnostics?.cameraReady ?? false,
       ),
     };
+  }
+
+  Future<void> _captureQrTarget() async {
+    final capturedValue = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (context) => const QrTargetCaptureScreen(),
+      ),
+    );
+
+    if (!mounted || capturedValue == null) {
+      return;
+    }
+
+    setState(() {
+      _mission = _mission.copyWith(qrTargetValue: capturedValue);
+    });
   }
 }
 

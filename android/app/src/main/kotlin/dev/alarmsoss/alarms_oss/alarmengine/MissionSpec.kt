@@ -7,6 +7,7 @@ data class MissionSpec(
     val mathDifficultyId: String? = null,
     val mathProblemCount: Int? = null,
     val stepGoal: Int? = null,
+    val qrTargetValue: String? = null,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return mapOf(
@@ -18,6 +19,9 @@ data class MissionSpec(
                 )
                 TYPE_STEPS -> mapOf(
                     "goal" to normalizeStepGoal(stepGoal),
+                )
+                TYPE_QR -> mapOf(
+                    "targetValue" to normalizeQrTargetValue(qrTargetValue),
                 )
                 else -> emptyMap<String, Any?>()
             },
@@ -39,6 +43,10 @@ data class MissionSpec(
                         TYPE_STEPS -> {
                             put("goal", normalizeStepGoal(stepGoal))
                         }
+
+                        TYPE_QR -> {
+                            put("targetValue", normalizeQrTargetValue(qrTargetValue))
+                        }
                     }
                 },
             )
@@ -57,6 +65,7 @@ data class MissionSpec(
         const val DEFAULT_STEP_GOAL = 30
         const val MIN_STEP_GOAL = 10
         const val MAX_STEP_GOAL = 100
+        const val MIN_QR_TARGET_LENGTH = 1
 
         fun fromChannelMap(raw: Map<*, *>?, fallbackType: String? = null): MissionSpec {
             val type = (raw?.get("type") as? String) ?: fallbackType ?: TYPE_NONE
@@ -76,6 +85,10 @@ data class MissionSpec(
                 },
                 stepGoal = when (type) {
                     TYPE_STEPS -> normalizeStepGoal((config?.get("goal") as? Number)?.toInt())
+                    else -> null
+                },
+                qrTargetValue = when (type) {
+                    TYPE_QR -> normalizeQrTargetValue(config?.get("targetValue") as? String)
                     else -> null
                 },
             )
@@ -112,6 +125,16 @@ data class MissionSpec(
                     )
                     else -> null
                 },
+                qrTargetValue = when (type) {
+                    TYPE_QR -> normalizeQrTargetValue(
+                        if (config?.has("targetValue") == true) {
+                            config.optString("targetValue")
+                        } else {
+                            null
+                        },
+                    )
+                    else -> null
+                },
             )
         }
 
@@ -123,6 +146,15 @@ data class MissionSpec(
         fun normalizeStepGoal(value: Int?): Int {
             return (value ?: DEFAULT_STEP_GOAL)
                 .coerceIn(MIN_STEP_GOAL, MAX_STEP_GOAL)
+        }
+
+        fun normalizeQrTargetValue(value: String?): String? {
+            val normalized = value?.trim()?.takeIf(String::isNotEmpty)
+            return if (normalized != null && normalized.length >= MIN_QR_TARGET_LENGTH) {
+                normalized
+            } else {
+                null
+            }
         }
     }
 }

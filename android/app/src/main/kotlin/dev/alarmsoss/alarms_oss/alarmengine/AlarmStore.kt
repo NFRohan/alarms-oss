@@ -5,7 +5,8 @@ import org.json.JSONArray
 
 class AlarmStore(context: Context) {
     private val prefs =
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        alarmEngineStorageContext(context)
+            .getSharedPreferences(ALARM_ENGINE_PREFS_NAME, Context.MODE_PRIVATE)
 
     fun getAll(): List<AlarmRecord> {
         val raw = prefs.getString(KEY_ALARMS, "[]") ?: "[]"
@@ -41,7 +42,6 @@ class AlarmStore(context: Context) {
     }
 
     companion object {
-        private const val PREFS_NAME = "alarm_engine_store"
         private const val KEY_ALARMS = "alarms"
     }
 }

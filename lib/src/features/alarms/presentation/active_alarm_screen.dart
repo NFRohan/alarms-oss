@@ -206,6 +206,11 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
                                               )
                                               .refresh();
                                         },
+                                        requestCameraPermission: () => ref
+                                            .read(
+                                              activeAlarmSessionControllerProvider,
+                                            )
+                                            .requestCameraPermission(),
                                         requestActivityRecognitionPermission: () => ref
                                             .read(
                                               activeAlarmSessionControllerProvider,
