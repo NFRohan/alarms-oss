@@ -24,6 +24,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
   cancel-in-progress: false
@@ -147,7 +150,7 @@ jobs:
           EOF
 
       - name: Upload release build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: neoalarm-release-${{ steps.release_meta.outputs.version }}
           path: dist/*
