@@ -17,6 +17,7 @@ data class AlarmRingSession(
     val maxSnoozes: Int,
     val snoozeDurationMinutes: Int,
     val nextSnoozeAtEpochMillis: Long?,
+    val missionTimeoutAtEpochMillis: Long?,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return mapOf(
@@ -31,6 +32,9 @@ data class AlarmRingSession(
             "snoozeCount" to snoozeCount,
             "maxSnoozes" to maxSnoozes,
             "snoozeDurationMinutes" to snoozeDurationMinutes,
+            "missionTimeoutAtUtc" to missionTimeoutAtEpochMillis?.let {
+                Instant.ofEpochMilli(it).toString()
+            },
         )
     }
 
@@ -48,6 +52,7 @@ data class AlarmRingSession(
             put("maxSnoozes", maxSnoozes)
             put("snoozeDurationMinutes", snoozeDurationMinutes)
             put("nextSnoozeAtEpochMillis", nextSnoozeAtEpochMillis)
+            put("missionTimeoutAtEpochMillis", missionTimeoutAtEpochMillis)
         }
     }
 
@@ -68,11 +73,15 @@ data class AlarmRingSession(
             state = STATE_RINGING,
             startedAtEpochMillis = nowEpochMillis,
             nextSnoozeAtEpochMillis = null,
+            missionTimeoutAtEpochMillis = null,
         )
     }
 
-    fun activateMission(): AlarmRingSession {
-        return copy(state = STATE_MISSION_ACTIVE)
+    fun activateMission(missionTimeoutAtEpochMillis: Long): AlarmRingSession {
+        return copy(
+            state = STATE_MISSION_ACTIVE,
+            missionTimeoutAtEpochMillis = missionTimeoutAtEpochMillis,
+        )
     }
 
     fun snoozedUntil(triggerAtEpochMillis: Long): AlarmRingSession {
@@ -80,11 +89,16 @@ data class AlarmRingSession(
             state = STATE_SNOOZED,
             snoozeCount = snoozeCount + 1,
             nextSnoozeAtEpochMillis = triggerAtEpochMillis,
+            missionTimeoutAtEpochMillis = null,
         )
     }
 
     fun withMission(updatedMission: AlarmMissionRuntime): AlarmRingSession {
         return copy(mission = updatedMission)
+    }
+
+    fun withMissionTimeout(triggerAtEpochMillis: Long): AlarmRingSession {
+        return copy(missionTimeoutAtEpochMillis = triggerAtEpochMillis)
     }
 
     companion object {
@@ -106,6 +120,7 @@ data class AlarmRingSession(
                 maxSnoozes = record.maxSnoozes,
                 snoozeDurationMinutes = record.snoozeDurationMinutes,
                 nextSnoozeAtEpochMillis = null,
+                missionTimeoutAtEpochMillis = null,
             )
         }
 
@@ -114,6 +129,13 @@ data class AlarmRingSession(
                 !json.isNull("nextSnoozeAtEpochMillis")
             ) {
                 json.getLong("nextSnoozeAtEpochMillis")
+            } else {
+                null
+            }
+            val missionTimeoutAt = if (json.has("missionTimeoutAtEpochMillis") &&
+                !json.isNull("missionTimeoutAtEpochMillis")
+            ) {
+                json.getLong("missionTimeoutAtEpochMillis")
             } else {
                 null
             }
@@ -135,6 +157,7 @@ data class AlarmRingSession(
                 maxSnoozes = json.optInt("maxSnoozes", 3),
                 snoozeDurationMinutes = json.optInt("snoozeDurationMinutes", 9),
                 nextSnoozeAtEpochMillis = nextSnoozeAt,
+                missionTimeoutAtEpochMillis = missionTimeoutAt,
             )
         }
     }

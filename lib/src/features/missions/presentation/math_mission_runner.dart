@@ -36,7 +36,7 @@ class MathMissionRunner extends StatefulWidget {
   final ActiveAlarmSession session;
   final Future<void> Function() registerActivity;
   final Future<MathAnswerSubmissionResult> Function(String answer)
-      submitMathAnswer;
+  submitMathAnswer;
 
   @override
   State<MathMissionRunner> createState() => _MathMissionRunnerState();

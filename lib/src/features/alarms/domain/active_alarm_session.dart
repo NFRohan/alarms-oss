@@ -13,6 +13,7 @@ class ActiveAlarmSession {
     required this.snoozeCount,
     required this.maxSnoozes,
     required this.snoozeDurationMinutes,
+    required this.missionTimeoutAtUtc,
   });
 
   factory ActiveAlarmSession.fromMap(Map<Object?, Object?> raw) {
@@ -31,6 +32,9 @@ class ActiveAlarmSession {
       snoozeCount: (raw['snoozeCount']! as num).toInt(),
       maxSnoozes: (raw['maxSnoozes']! as num).toInt(),
       snoozeDurationMinutes: (raw['snoozeDurationMinutes']! as num).toInt(),
+      missionTimeoutAtUtc: (raw['missionTimeoutAtUtc'] as String?) == null
+          ? null
+          : DateTime.parse(raw['missionTimeoutAtUtc']! as String).toUtc(),
     );
   }
 
@@ -45,8 +49,11 @@ class ActiveAlarmSession {
   final int snoozeCount;
   final int maxSnoozes;
   final int snoozeDurationMinutes;
+  final DateTime? missionTimeoutAtUtc;
 
   DateTime get startedAtLocal => startedAtUtc.toLocal();
+
+  DateTime? get missionTimeoutAtLocal => missionTimeoutAtUtc?.toLocal();
 
   bool get canSnooze => snoozeCount < maxSnoozes;
 
@@ -57,4 +64,7 @@ class ActiveAlarmSession {
   bool get requiresMission => !mission.spec.isDirectDismiss;
 
   bool get awaitingMissionStart => requiresMission && isRinging;
+
+  bool get showsMissionQuietTimer =>
+      isMissionActive && missionTimeoutAtUtc != null;
 }

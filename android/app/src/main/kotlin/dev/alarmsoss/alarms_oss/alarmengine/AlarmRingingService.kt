@@ -94,6 +94,7 @@ class AlarmRingingService : Service() {
 
         cancelSnooze(alarmId)
         cancelMissionTimeout(alarmId)
+        StepMissionTracker.stop()
 
         val session = ringSessionStore.get()
             ?.takeIf { it.alarmId == alarmId }
@@ -113,6 +114,7 @@ class AlarmRingingService : Service() {
             return
         }
 
+        StepMissionTracker.stop()
         currentSession = session
         startForeground(NOTIFICATION_ID, buildNotification(session))
         acquireWakeLock()
@@ -126,6 +128,7 @@ class AlarmRingingService : Service() {
         wakeLock = null
         activeAlarmId?.let(::cancelSnooze)
         activeAlarmId?.let(::cancelMissionTimeout)
+        StepMissionTracker.stop()
         currentSession = null
         if (clearSession) {
             ringSessionStore.clear()
@@ -149,6 +152,7 @@ class AlarmRingingService : Service() {
         ringSessionStore.put(updatedSession)
         scheduleSnooze(updatedSession)
         cancelMissionTimeout(session.alarmId)
+        StepMissionTracker.stop()
         stopFeedback()
         wakeLock?.takeIf { it.isHeld }?.release()
         wakeLock = null
@@ -167,9 +171,15 @@ class AlarmRingingService : Service() {
             return
         }
 
-        val updatedSession = session.activateMission()
+        val missionTimeoutAt = System.currentTimeMillis() + MISSION_INACTIVITY_TIMEOUT_MS
+        val updatedSession = session.activateMission(missionTimeoutAt)
         ringSessionStore.put(updatedSession)
         currentSession = updatedSession
+        if (updatedSession.mission.spec.type == MissionSpec.TYPE_STEPS) {
+            StepMissionTracker.ensureRunning(applicationContext, updatedSession)
+        } else {
+            StepMissionTracker.stop()
+        }
         scheduleMissionTimeout(updatedSession)
         stopFeedback()
         wakeLock?.takeIf { it.isHeld }?.release()
@@ -184,7 +194,11 @@ class AlarmRingingService : Service() {
             return
         }
 
-        scheduleMissionTimeout(session)
+        val missionTimeoutAt = System.currentTimeMillis() + MISSION_INACTIVITY_TIMEOUT_MS
+        val updatedSession = session.withMissionTimeout(missionTimeoutAt)
+        ringSessionStore.put(updatedSession)
+        currentSession = updatedSession
+        scheduleMissionTimeout(updatedSession)
         stopSelf()
     }
 
@@ -276,11 +290,19 @@ class AlarmRingingService : Service() {
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(session.alarmLabel)
             .setContentText(
-                if (session.mission.spec.type == MissionSpec.TYPE_MATH) {
-                    val count = MissionSpec.normalizeMathProblemCount(session.mission.spec.mathProblemCount)
-                    "Solve $count math ${if (count == 1) "problem" else "problems"} to dismiss"
-                } else {
-                    "Alarm is ringing"
+                when (session.mission.spec.type) {
+                    MissionSpec.TYPE_MATH -> {
+                        val count =
+                            MissionSpec.normalizeMathProblemCount(session.mission.spec.mathProblemCount)
+                        "Solve $count math ${if (count == 1) "problem" else "problems"} to dismiss"
+                    }
+
+                    MissionSpec.TYPE_STEPS -> {
+                        val goal = MissionSpec.normalizeStepGoal(session.mission.spec.stepGoal)
+                        "Walk $goal steps to dismiss"
+                    }
+
+                    else -> "Alarm is ringing"
                 },
             )
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -385,9 +407,11 @@ class AlarmRingingService : Service() {
     }
 
     private fun scheduleMissionTimeout(session: AlarmRingSession) {
+        val triggerAt = session.missionTimeoutAtEpochMillis
+            ?: System.currentTimeMillis() + MISSION_INACTIVITY_TIMEOUT_MS
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + MISSION_INACTIVITY_TIMEOUT_MS,
+            triggerAt,
             buildMissionTimeoutOperation(session.alarmId),
         )
     }

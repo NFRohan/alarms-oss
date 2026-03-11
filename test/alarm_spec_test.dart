@@ -47,4 +47,26 @@ void main() {
 
     expect(alarm.repeatSummary, 'One time');
   });
+
+  test('serializes and deserializes steps mission config', () {
+    final original = AlarmSpec(
+      id: 'alarm-2',
+      label: 'Walk',
+      hour: 6,
+      minute: 45,
+      timezoneId: 'UTC',
+      enabled: true,
+      weekdays: const [],
+      ringtone: AlarmRingtone.systemAlarm,
+      snoozeDurationMinutes: 5,
+      maxSnoozes: 1,
+      mission: const MissionSpec.steps(goal: 50),
+      nextTriggerAtUtc: null,
+    );
+
+    final roundTrip = AlarmSpec.fromMap(original.toMap());
+
+    expect(roundTrip.mission.type, AlarmMissionType.steps);
+    expect(roundTrip.mission.stepGoal, 50);
+  });
 }

@@ -22,6 +22,10 @@ class AlarmEngineMethodCallHandler(
     context: Context,
     private val activity: Activity?,
 ) : MethodChannel.MethodCallHandler {
+    private val permissionPreferences = context.applicationContext.getSharedPreferences(
+        PERMISSION_PREFS_NAME,
+        Context.MODE_PRIVATE,
+    )
     private val appContext = context.applicationContext
     private val store = AlarmStore(appContext)
     private val ringSessionStore = RingSessionStore(appContext)
@@ -57,7 +61,15 @@ class AlarmEngineMethodCallHandler(
                         .map(AlarmRecord::toChannelMap),
                 )
 
-                "getActiveSession" -> result.success(activeSession()?.toChannelMap())
+                "getActiveSession" -> {
+                    val session = activeSession()
+                    if (session?.isMissionActive == true &&
+                        session.mission.spec.type == MissionSpec.TYPE_STEPS
+                    ) {
+                        StepMissionTracker.ensureRunning(appContext, session)
+                    }
+                    result.success(activeSession()?.toChannelMap())
+                }
 
                 "upsertAlarm" -> {
                     val raw = call.arguments as? Map<*, *>
@@ -123,6 +135,9 @@ class AlarmEngineMethodCallHandler(
                     val session = activeSession()
                         ?: throw IllegalStateException("No active mission session.")
                     if (session.isMissionActive) {
+                        if (session.mission.spec.type == MissionSpec.TYPE_STEPS) {
+                            StepMissionTracker.ensureRunning(appContext, session)
+                        }
                         AlarmRingingService.registerMissionActivity(appContext)
                     }
                     result.success(null)
@@ -223,10 +238,14 @@ class AlarmEngineMethodCallHandler(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                         !isPermissionGranted(Manifest.permission.ACTIVITY_RECOGNITION)
                     ) {
-                        requestRuntimePermission(
+                        requestRuntimePermissionOrOpenSettings(
                             Manifest.permission.ACTIVITY_RECOGNITION,
                             REQUEST_ACTIVITY_RECOGNITION_CODE,
+                            KEY_ACTIVITY_RECOGNITION_REQUESTED,
                         )
+                    }
+                    if (activeSession()?.mission?.spec?.type == MissionSpec.TYPE_STEPS) {
+                        StepMissionTracker.ensureRunning(appContext, activeSession())
                     }
                     result.success(null)
                 }
@@ -241,7 +260,7 @@ class AlarmEngineMethodCallHandler(
     }
 
     private fun hasStepSensor(): Boolean {
-        return sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+        return sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR) != null
     }
 
     private fun activeSession(): AlarmRingSession? {
@@ -282,7 +301,42 @@ class AlarmEngineMethodCallHandler(
         )
     }
 
+    private fun requestRuntimePermissionOrOpenSettings(
+        permission: String,
+        requestCode: Int,
+        preferenceKey: String,
+    ) {
+        val hostActivity = activity
+        if (hostActivity == null) {
+            openAppDetailsSettings()
+            return
+        }
+
+        val wasRequestedBefore = permissionPreferences.getBoolean(preferenceKey, false)
+        val shouldRequestInApp = !wasRequestedBefore ||
+            ActivityCompat.shouldShowRequestPermissionRationale(hostActivity, permission)
+
+        if (shouldRequestInApp) {
+            permissionPreferences.edit().putBoolean(preferenceKey, true).apply()
+            requestRuntimePermission(permission, requestCode)
+            return
+        }
+
+        openAppDetailsSettings()
+    }
+
+    private fun openAppDetailsSettings() {
+        appContext.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${appContext.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+        )
+    }
+
     companion object {
+        private const val KEY_ACTIVITY_RECOGNITION_REQUESTED = "activity_recognition_requested"
+        private const val PERMISSION_PREFS_NAME = "alarm_engine_permission_prompts"
         private const val REQUEST_ACTIVITY_RECOGNITION_CODE = 1003
         private const val REQUEST_CAMERA_CODE = 1002
         private const val REQUEST_NOTIFICATIONS_CODE = 1001

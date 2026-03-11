@@ -9,6 +9,13 @@ enum class MathAnswerSubmissionResult(val id: String) {
     COMPLETED("completed"),
 }
 
+enum class StepMissionTrackingState(val id: String) {
+    AWAITING_STEPS("awaiting_steps"),
+    TRACKING("tracking"),
+    MISSING_PERMISSION("missing_permission"),
+    UNSUPPORTED_SENSOR("unsupported_sensor"),
+}
+
 data class MathChallengeState(
     val leftOperand: Int,
     val rightOperand: Int,
@@ -154,12 +161,48 @@ data class MathChallengeState(
     }
 }
 
+data class StepMissionProgressState(
+    val completedSteps: Int,
+    val targetSteps: Int,
+    val trackingState: String,
+) {
+    fun toChannelMap(): Map<String, Any> {
+        return mapOf(
+            "completedSteps" to completedSteps,
+            "targetSteps" to targetSteps,
+            "trackingState" to trackingState,
+        )
+    }
+
+    fun toJson(): JSONObject {
+        return JSONObject().apply {
+            put("completedSteps", completedSteps)
+            put("targetSteps", targetSteps)
+            put("trackingState", trackingState)
+        }
+    }
+
+    companion object {
+        fun fromJson(json: JSONObject): StepMissionProgressState {
+            return StepMissionProgressState(
+                completedSteps = json.optInt("completedSteps", 0),
+                targetSteps = MissionSpec.normalizeStepGoal(json.optInt("targetSteps")),
+                trackingState = json.optString(
+                    "trackingState",
+                    StepMissionTrackingState.AWAITING_STEPS.id,
+                ),
+            )
+        }
+    }
+}
+
 data class AlarmMissionRuntime(
     val spec: MissionSpec,
     val status: String,
     val solvedProblemCount: Int,
     val targetProblemCount: Int,
     val mathChallenge: MathChallengeState?,
+    val stepProgress: StepMissionProgressState?,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return buildMap {
@@ -168,6 +211,7 @@ data class AlarmMissionRuntime(
             put("solvedProblemCount", solvedProblemCount)
             put("targetProblemCount", targetProblemCount)
             put("mathChallenge", mathChallenge?.toChannelMap())
+            put("stepProgress", stepProgress?.toChannelMap())
         }
     }
 
@@ -177,6 +221,7 @@ data class AlarmMissionRuntime(
             put("solvedProblemCount", solvedProblemCount)
             put("targetProblemCount", targetProblemCount)
             put("mathChallenge", mathChallenge?.toJson())
+            put("stepProgress", stepProgress?.toJson())
         }
     }
 
@@ -212,6 +257,37 @@ data class AlarmMissionRuntime(
         ) to MathAnswerSubmissionResult.ADVANCED
     }
 
+    fun withStepTrackingState(nextState: StepMissionTrackingState): AlarmMissionRuntime {
+        if (spec.type != MissionSpec.TYPE_STEPS) {
+            return this
+        }
+
+        val resolvedStepProgress = stepProgress ?: defaultStepProgress(spec)
+        return copy(
+            stepProgress = resolvedStepProgress.copy(trackingState = nextState.id),
+        )
+    }
+
+    fun recordDetectedStep(stepCount: Int = 1): AlarmMissionRuntime {
+        if (spec.type != MissionSpec.TYPE_STEPS) {
+            return this
+        }
+
+        val resolvedStepProgress = stepProgress ?: defaultStepProgress(spec)
+        val normalizedStepCount = stepCount.coerceAtLeast(1)
+        val completedSteps = (resolvedStepProgress.completedSteps + normalizedStepCount)
+            .coerceAtMost(resolvedStepProgress.targetSteps)
+        val completed = completedSteps >= resolvedStepProgress.targetSteps
+
+        return copy(
+            status = if (completed) STATUS_COMPLETED else STATUS_PENDING,
+            stepProgress = resolvedStepProgress.copy(
+                completedSteps = completedSteps,
+                trackingState = StepMissionTrackingState.TRACKING.id,
+            ),
+        )
+    }
+
     companion object {
         const val STATUS_PENDING = "pending"
         const val STATUS_COMPLETED = "completed"
@@ -224,6 +300,7 @@ data class AlarmMissionRuntime(
                     solvedProblemCount = 0,
                     targetProblemCount = 0,
                     mathChallenge = null,
+                    stepProgress = null,
                 )
 
                 MissionSpec.TYPE_MATH -> {
@@ -237,8 +314,18 @@ data class AlarmMissionRuntime(
                         mathChallenge = MathChallengeState.generate(
                             spec.mathDifficultyId ?: MissionSpec.DEFAULT_MATH_DIFFICULTY,
                         ),
+                        stepProgress = null,
                     )
                 }
+
+                MissionSpec.TYPE_STEPS -> AlarmMissionRuntime(
+                    spec = spec,
+                    status = STATUS_PENDING,
+                    solvedProblemCount = 0,
+                    targetProblemCount = 0,
+                    mathChallenge = null,
+                    stepProgress = defaultStepProgress(spec),
+                )
 
                 else -> AlarmMissionRuntime(
                     spec = spec,
@@ -246,6 +333,7 @@ data class AlarmMissionRuntime(
                     solvedProblemCount = 0,
                     targetProblemCount = 0,
                     mathChallenge = null,
+                    stepProgress = null,
                 )
             }
         }
@@ -253,6 +341,7 @@ data class AlarmMissionRuntime(
         fun fromJson(json: JSONObject): AlarmMissionRuntime {
             val spec = MissionSpec.fromJson(json)
             val challengeJson = json.optJSONObject("mathChallenge")
+            val stepProgressJson = json.optJSONObject("stepProgress")
             val targetProblemCount = when (spec.type) {
                 MissionSpec.TYPE_MATH -> MissionSpec.normalizeMathProblemCount(
                     if (json.has("targetProblemCount")) {
@@ -273,6 +362,19 @@ data class AlarmMissionRuntime(
                 solvedProblemCount = json.optInt("solvedProblemCount", 0),
                 targetProblemCount = targetProblemCount,
                 mathChallenge = challengeJson?.let(MathChallengeState::fromJson),
+                stepProgress = when (spec.type) {
+                    MissionSpec.TYPE_STEPS -> stepProgressJson?.let(StepMissionProgressState::fromJson)
+                        ?: defaultStepProgress(spec)
+                    else -> null
+                },
+            )
+        }
+
+        private fun defaultStepProgress(spec: MissionSpec): StepMissionProgressState {
+            return StepMissionProgressState(
+                completedSteps = 0,
+                targetSteps = MissionSpec.normalizeStepGoal(spec.stepGoal),
+                trackingState = StepMissionTrackingState.AWAITING_STEPS.id,
             )
         }
     }

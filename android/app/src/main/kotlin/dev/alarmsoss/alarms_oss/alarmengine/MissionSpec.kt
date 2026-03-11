@@ -6,6 +6,7 @@ data class MissionSpec(
     val type: String,
     val mathDifficultyId: String? = null,
     val mathProblemCount: Int? = null,
+    val stepGoal: Int? = null,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return mapOf(
@@ -14,6 +15,9 @@ data class MissionSpec(
                 TYPE_MATH -> mapOf(
                     "difficulty" to (mathDifficultyId ?: DEFAULT_MATH_DIFFICULTY),
                     "problemCount" to normalizeMathProblemCount(mathProblemCount),
+                )
+                TYPE_STEPS -> mapOf(
+                    "goal" to normalizeStepGoal(stepGoal),
                 )
                 else -> emptyMap<String, Any?>()
             },
@@ -26,9 +30,15 @@ data class MissionSpec(
             put(
                 "config",
                 JSONObject().apply {
-                    if (type == TYPE_MATH) {
-                        put("difficulty", mathDifficultyId ?: DEFAULT_MATH_DIFFICULTY)
-                        put("problemCount", normalizeMathProblemCount(mathProblemCount))
+                    when (type) {
+                        TYPE_MATH -> {
+                            put("difficulty", mathDifficultyId ?: DEFAULT_MATH_DIFFICULTY)
+                            put("problemCount", normalizeMathProblemCount(mathProblemCount))
+                        }
+
+                        TYPE_STEPS -> {
+                            put("goal", normalizeStepGoal(stepGoal))
+                        }
                     }
                 },
             )
@@ -44,6 +54,9 @@ data class MissionSpec(
         const val DEFAULT_MATH_PROBLEM_COUNT = 1
         const val MIN_MATH_PROBLEM_COUNT = 1
         const val MAX_MATH_PROBLEM_COUNT = 5
+        const val DEFAULT_STEP_GOAL = 30
+        const val MIN_STEP_GOAL = 10
+        const val MAX_STEP_GOAL = 100
 
         fun fromChannelMap(raw: Map<*, *>?, fallbackType: String? = null): MissionSpec {
             val type = (raw?.get("type") as? String) ?: fallbackType ?: TYPE_NONE
@@ -56,7 +69,13 @@ data class MissionSpec(
                     else -> null
                 },
                 mathProblemCount = when (type) {
-                    TYPE_MATH -> normalizeMathProblemCount((config?.get("problemCount") as? Number)?.toInt())
+                    TYPE_MATH -> normalizeMathProblemCount(
+                        (config?.get("problemCount") as? Number)?.toInt(),
+                    )
+                    else -> null
+                },
+                stepGoal = when (type) {
+                    TYPE_STEPS -> normalizeStepGoal((config?.get("goal") as? Number)?.toInt())
                     else -> null
                 },
             )
@@ -83,12 +102,27 @@ data class MissionSpec(
                     )
                     else -> null
                 },
+                stepGoal = when (type) {
+                    TYPE_STEPS -> normalizeStepGoal(
+                        if (config?.has("goal") == true) {
+                            config.optInt("goal", DEFAULT_STEP_GOAL)
+                        } else {
+                            null
+                        },
+                    )
+                    else -> null
+                },
             )
         }
 
         fun normalizeMathProblemCount(value: Int?): Int {
             return (value ?: DEFAULT_MATH_PROBLEM_COUNT)
                 .coerceIn(MIN_MATH_PROBLEM_COUNT, MAX_MATH_PROBLEM_COUNT)
+        }
+
+        fun normalizeStepGoal(value: Int?): Int {
+            return (value ?: DEFAULT_STEP_GOAL)
+                .coerceIn(MIN_STEP_GOAL, MAX_STEP_GOAL)
         }
     }
 }

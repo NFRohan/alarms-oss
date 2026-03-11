@@ -5,13 +5,17 @@ import 'package:flutter/widgets.dart';
 class MissionActionCallbacks {
   const MissionActionCallbacks({
     required this.registerActivity,
+    required this.refreshSession,
+    required this.requestActivityRecognitionPermission,
     required this.submitMathAnswer,
   });
 
   final Future<void> Function() registerActivity;
+  final VoidCallback refreshSession;
+  final Future<void> Function() requestActivityRecognitionPermission;
 
   final Future<MathAnswerSubmissionResult> Function(String answer)
-      submitMathAnswer;
+  submitMathAnswer;
 }
 
 abstract class MissionDriver {

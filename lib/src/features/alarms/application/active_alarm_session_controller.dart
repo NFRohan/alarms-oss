@@ -37,8 +37,14 @@ class ActiveAlarmSessionController {
     _ref.invalidate(activeAlarmSessionProvider);
   }
 
-  Future<void> registerMissionActivity() {
-    return _repository.registerMissionActivity();
+  Future<void> registerMissionActivity() async {
+    await _repository.registerMissionActivity();
+    _ref.invalidate(activeAlarmSessionProvider);
+  }
+
+  Future<void> requestActivityRecognitionPermission() async {
+    await _repository.requestActivityRecognitionPermission();
+    _ref.invalidate(activeAlarmSessionProvider);
   }
 
   Future<MathAnswerSubmissionResult> submitMathAnswer(String answer) async {

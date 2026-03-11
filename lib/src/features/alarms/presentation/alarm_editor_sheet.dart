@@ -3,9 +3,11 @@ import 'package:alarms_oss/src/core/ui/neo_brutal_widgets.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
+import 'package:alarms_oss/src/features/missions/application/mission_registry.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AlarmEditorSheet extends StatefulWidget {
+class AlarmEditorSheet extends ConsumerStatefulWidget {
   const AlarmEditorSheet({required this.alarm, this.engineStatus, super.key});
 
   final AlarmSpec alarm;
@@ -27,10 +29,10 @@ class AlarmEditorSheet extends StatefulWidget {
   }
 
   @override
-  State<AlarmEditorSheet> createState() => _AlarmEditorSheetState();
+  ConsumerState<AlarmEditorSheet> createState() => _AlarmEditorSheetState();
 }
 
-class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
+class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
   late final TextEditingController _labelController;
   late TimeOfDay _time;
   late bool _enabled;
@@ -50,11 +52,12 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
     _ringtone = widget.alarm.ringtone;
     _snoozeDurationMinutes = widget.alarm.snoozeDurationMinutes;
     _maxSnoozes = widget.alarm.maxSnoozes;
+    final missionRegistry = ref.read(missionRegistryProvider);
     _mission =
-        _missionOptionFor(
+        missionRegistry.isConfigurableForEditor(
           widget.alarm.mission.type,
-          widget.engineStatus,
-        ).enabled
+          diagnostics: widget.engineStatus,
+        )
         ? widget.alarm.mission
         : const MissionSpec.none();
   }
@@ -70,6 +73,10 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
     final diagnostics = widget.engineStatus;
+    final missionRegistry = ref.read(missionRegistryProvider);
+    final missionTypes = missionRegistry.editorMissionTypes(
+      diagnostics: diagnostics,
+    );
     final amPmLabel = _time.period == DayPeriod.am ? 'AM' : 'PM';
 
     return FractionallySizedBox(
@@ -260,7 +267,7 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
                             border: InputBorder.none,
                           ),
                           icon: const Icon(Icons.expand_more),
-                          items: AlarmMissionType.values
+                          items: missionTypes
                               .map((missionType) {
                                 final option = _missionOptionFor(
                                   missionType,
@@ -268,7 +275,6 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
                                 );
                                 return DropdownMenuItem<AlarmMissionType>(
                                   value: missionType,
-                                  enabled: option.enabled,
                                   child: Text(option.title.toUpperCase()),
                                 );
                               })
@@ -289,6 +295,16 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
                         _missionOptionFor(_mission.type, diagnostics).detail,
                         style: theme.textTheme.bodySmall,
                       ),
+                      if ((diagnostics?.hasStepSensor ?? false) &&
+                          !(diagnostics?.activityRecognitionGranted ??
+                              true)) ...[
+                        const SizedBox(height: 12),
+                        const _EditorWarning(
+                          title: 'Steps mission hidden',
+                          detail:
+                              'Grant or re-enable activity recognition from Settings > Device readiness before steps alarms can be configured.',
+                        ),
+                      ],
                       if (_mission.type == AlarmMissionType.math) ...[
                         const SizedBox(height: 14),
                         _EditorSelector(
@@ -351,6 +367,35 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
                                 _mission = _mission.copyWith(
                                   mathProblemCount: value,
                                 );
+                              });
+                            },
+                          ),
+                        ),
+                      ] else if (_mission.type == AlarmMissionType.steps) ...[
+                        const SizedBox(height: 14),
+                        _EditorSelector(
+                          title: 'STEP GOAL',
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _mission.stepGoal,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                            ),
+                            icon: const Icon(Icons.expand_more),
+                            items: const [10, 20, 30, 50, 100]
+                                .map(
+                                  (count) => DropdownMenuItem<int>(
+                                    value: count,
+                                    child: Text('$count STEPS'),
+                                  ),
+                                )
+                                .toList(growable: false),
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
+
+                              setState(() {
+                                _mission = _mission.copyWith(stepGoal: value);
                               });
                             },
                           ),
@@ -464,11 +509,13 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
       AlarmMissionType.steps => _MissionOption(
         title: 'Steps mission',
         detail: !((diagnostics?.hasStepSensor) ?? false)
-            ? 'This device does not expose a hardware step counter.'
+            ? 'This device does not expose a live step detector.'
             : !((diagnostics?.activityRecognitionGranted) ?? false)
-            ? 'Grant activity recognition from diagnostics before this mission can be enabled later.'
-            : 'Sensor prerequisites look good. Mission runtime lands in Sprint 6.',
-        enabled: false,
+            ? 'Grant or re-enable activity recognition from Settings before saving a steps-backed alarm.'
+            : 'Walk a configurable number of steps to dismiss the alarm.',
+        enabled:
+            (diagnostics?.hasStepSensor ?? false) &&
+            (diagnostics?.activityRecognitionGranted ?? false),
       ),
       AlarmMissionType.qr => _MissionOption(
         title: 'QR mission',

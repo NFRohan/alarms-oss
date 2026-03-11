@@ -1,11 +1,19 @@
 const minMathMissionProblemCount = 1;
 const maxMathMissionProblemCount = 5;
+const defaultStepMissionGoal = 30;
+const minStepMissionGoal = 10;
+const maxStepMissionGoal = 100;
 
 int _normalizeMathMissionProblemCount(int? value) {
   final resolved = value ?? minMathMissionProblemCount;
   return resolved
       .clamp(minMathMissionProblemCount, maxMathMissionProblemCount)
       .toInt();
+}
+
+int _normalizeStepMissionGoal(int? value) {
+  final resolved = value ?? defaultStepMissionGoal;
+  return resolved.clamp(minStepMissionGoal, maxStepMissionGoal).toInt();
 }
 
 enum AlarmMissionType {
@@ -55,10 +63,16 @@ class MissionSpec {
     required this.type,
     this.mathDifficulty = MathMissionDifficulty.standard,
     this.mathProblemCount = minMathMissionProblemCount,
+    this.stepGoal = defaultStepMissionGoal,
   }) : assert(
          type != AlarmMissionType.math ||
              (mathProblemCount >= minMathMissionProblemCount &&
                  mathProblemCount <= maxMathMissionProblemCount),
+       ),
+       assert(
+         type != AlarmMissionType.steps ||
+             (stepGoal >= minStepMissionGoal &&
+                 stepGoal <= maxStepMissionGoal),
        );
 
   const MissionSpec.none() : this(type: AlarmMissionType.none);
@@ -72,7 +86,8 @@ class MissionSpec {
          mathProblemCount: problemCount,
        );
 
-  const MissionSpec.steps() : this(type: AlarmMissionType.steps);
+  const MissionSpec.steps({int goal = defaultStepMissionGoal})
+    : this(type: AlarmMissionType.steps, stepGoal: goal);
 
   const MissionSpec.qr() : this(type: AlarmMissionType.qr);
 
@@ -95,7 +110,9 @@ class MissionSpec {
           (config?['problemCount'] as num?)?.toInt(),
         ),
       ),
-      AlarmMissionType.steps => const MissionSpec.steps(),
+      AlarmMissionType.steps => MissionSpec.steps(
+        goal: _normalizeStepMissionGoal((config?['goal'] as num?)?.toInt()),
+      ),
       AlarmMissionType.qr => const MissionSpec.qr(),
     };
   }
@@ -103,6 +120,7 @@ class MissionSpec {
   final AlarmMissionType type;
   final MathMissionDifficulty mathDifficulty;
   final int mathProblemCount;
+  final int stepGoal;
 
   bool get isDirectDismiss => type == AlarmMissionType.none;
 
@@ -111,7 +129,7 @@ class MissionSpec {
       AlarmMissionType.none => type.label,
       AlarmMissionType.math =>
         '${type.label} - ${mathDifficulty.label} - $mathProblemCount ${mathProblemCount == 1 ? 'problem' : 'problems'}',
-      AlarmMissionType.steps => type.label,
+      AlarmMissionType.steps => '${type.label} - $stepGoal steps',
       AlarmMissionType.qr => type.label,
     };
   }
@@ -124,6 +142,7 @@ class MissionSpec {
           'difficulty': mathDifficulty.id,
           'problemCount': mathProblemCount,
         },
+        AlarmMissionType.steps => {'goal': stepGoal},
         _ => <String, Object?>{},
       },
     };
@@ -133,6 +152,7 @@ class MissionSpec {
     AlarmMissionType? type,
     MathMissionDifficulty? mathDifficulty,
     int? mathProblemCount,
+    int? stepGoal,
   }) {
     final resolvedType = type ?? this.type;
     return switch (resolvedType) {
@@ -143,7 +163,9 @@ class MissionSpec {
           mathProblemCount ?? this.mathProblemCount,
         ),
       ),
-      AlarmMissionType.steps => const MissionSpec.steps(),
+      AlarmMissionType.steps => MissionSpec.steps(
+        goal: _normalizeStepMissionGoal(stepGoal ?? this.stepGoal),
+      ),
       AlarmMissionType.qr => const MissionSpec.qr(),
     };
   }
@@ -199,6 +221,24 @@ enum MathAnswerSubmissionResult {
   }
 }
 
+enum StepMissionTrackingState {
+  awaitingSteps('awaiting_steps'),
+  tracking('tracking'),
+  missingPermission('missing_permission'),
+  unsupportedSensor('unsupported_sensor');
+
+  const StepMissionTrackingState(this.id);
+
+  final String id;
+
+  static StepMissionTrackingState fromId(String? value) {
+    return StepMissionTrackingState.values.firstWhere(
+      (state) => state.id == value,
+      orElse: () => StepMissionTrackingState.awaitingSteps,
+    );
+  }
+}
+
 class MathChallengeSnapshot {
   const MathChallengeSnapshot({
     required this.leftOperand,
@@ -224,6 +264,52 @@ class MathChallengeSnapshot {
   String get prompt => '$leftOperand $operatorSymbol $rightOperand';
 }
 
+class StepProgressSnapshot {
+  const StepProgressSnapshot({
+    required this.completedSteps,
+    required this.targetSteps,
+    required this.trackingState,
+  });
+
+  factory StepProgressSnapshot.fromMap(Map<Object?, Object?> raw) {
+    return StepProgressSnapshot(
+      completedSteps: (raw['completedSteps'] as num?)?.toInt() ?? 0,
+      targetSteps: _normalizeStepMissionGoal(
+        (raw['targetSteps'] as num?)?.toInt(),
+      ),
+      trackingState: StepMissionTrackingState.fromId(
+        raw['trackingState'] as String?,
+      ),
+    );
+  }
+
+  final int completedSteps;
+  final int targetSteps;
+  final StepMissionTrackingState trackingState;
+
+  int get remainingSteps => (targetSteps - completedSteps)
+      .clamp(0, targetSteps)
+      .toInt();
+
+  bool get isAwaitingSteps =>
+      trackingState == StepMissionTrackingState.awaitingSteps;
+
+  bool get isTracking => trackingState == StepMissionTrackingState.tracking;
+
+  bool get isPermissionBlocked =>
+      trackingState == StepMissionTrackingState.missingPermission;
+
+  bool get isUnsupported =>
+      trackingState == StepMissionTrackingState.unsupportedSensor;
+
+  double get progressFraction {
+    if (targetSteps <= 0) {
+      return 0;
+    }
+    return completedSteps / targetSteps;
+  }
+}
+
 class ActiveMissionSnapshot {
   const ActiveMissionSnapshot({
     required this.spec,
@@ -231,12 +317,15 @@ class ActiveMissionSnapshot {
     required this.solvedProblemCount,
     required this.targetProblemCount,
     this.mathChallenge,
+    this.stepProgress,
   });
 
   factory ActiveMissionSnapshot.fromMap(Map<Object?, Object?>? raw) {
     final missionRaw = raw ?? const <Object?, Object?>{};
     final config = missionRaw['config'] as Map<Object?, Object?>?;
     final challengeRaw = missionRaw['mathChallenge'] as Map<Object?, Object?>?;
+    final stepProgressRaw =
+        missionRaw['stepProgress'] as Map<Object?, Object?>?;
     final spec = MissionSpec.fromMap(missionRaw);
 
     return ActiveMissionSnapshot(
@@ -254,6 +343,16 @@ class ActiveMissionSnapshot {
       mathChallenge: challengeRaw == null
           ? null
           : MathChallengeSnapshot.fromMap(challengeRaw),
+      stepProgress: spec.type == AlarmMissionType.steps
+          ? StepProgressSnapshot.fromMap(
+              stepProgressRaw ??
+                  <Object?, Object?>{
+                    'completedSteps': 0,
+                    'targetSteps': spec.stepGoal,
+                    'trackingState': StepMissionTrackingState.awaitingSteps.id,
+                  },
+            )
+          : null,
     );
   }
 
@@ -262,12 +361,19 @@ class ActiveMissionSnapshot {
   final int solvedProblemCount;
   final int targetProblemCount;
   final MathChallengeSnapshot? mathChallenge;
+  final StepProgressSnapshot? stepProgress;
 
   bool get isCompleted => status == ActiveMissionStatus.completed;
 
   bool get hasMultipleProblems => targetProblemCount > 1;
 
-  int get currentProblemNumber => (solvedProblemCount + 1)
-      .clamp(minMathMissionProblemCount, targetProblemCount)
-      .toInt();
+  int get currentProblemNumber {
+    if (targetProblemCount <= 0) {
+      return 0;
+    }
+
+    return (solvedProblemCount + 1)
+        .clamp(minMathMissionProblemCount, targetProblemCount)
+        .toInt();
+  }
 }

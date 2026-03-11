@@ -21,9 +21,12 @@ class ActiveAlarmScreen extends ConsumerStatefulWidget {
 }
 
 class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
+  static const _missionQuietWindow = Duration(seconds: 30);
   static const _missionRefreshDelay = Duration(seconds: 31);
   static const _missionPingThrottle = Duration(seconds: 2);
+  static const _missionCountdownTick = Duration(milliseconds: 250);
 
+  Timer? _countdownTimer;
   Timer? _missionRefreshTimer;
   DateTime? _lastMissionPingAt;
 
@@ -32,23 +35,25 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
   @override
   void initState() {
     super.initState();
-    _syncMissionRefreshTimer();
+    _syncMissionTimers();
   }
 
   @override
   void didUpdateWidget(covariant ActiveAlarmScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_session.sessionId != oldWidget.session.sessionId ||
-        _session.state != oldWidget.session.state) {
+        _session.state != oldWidget.session.state ||
+        _session.missionTimeoutAtUtc != oldWidget.session.missionTimeoutAtUtc) {
       if (!_session.isMissionActive) {
         _lastMissionPingAt = null;
       }
-      _syncMissionRefreshTimer();
+      _syncMissionTimers();
     }
   }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _missionRefreshTimer?.cancel();
     super.dispose();
   }
@@ -167,6 +172,13 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
                                     style: theme.textTheme.headlineLarge,
                                   ),
                                   const SizedBox(height: 28),
+                                  if (_session.showsMissionQuietTimer) ...[
+                                    _MissionQuietTimer(
+                                      remaining: _remainingMissionQuietTime,
+                                      total: _missionQuietWindow,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
                                   if (_session.awaitingMissionStart)
                                     _MissionEntryPanel(
                                       onStartMission: () {
@@ -176,49 +188,52 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
                                                 activeAlarmSessionControllerProvider,
                                               )
                                               .startMission();
-                                          _syncMissionRefreshTimer();
+                                          _syncMissionTimers();
                                         });
                                       },
                                     )
                                   else if (_session.requiresMission)
-                                    Listener(
-                                      behavior: HitTestBehavior.translucent,
-                                      onPointerDown: (_) {
-                                        _registerMissionActivity();
-                                      },
-                                      child: missionDriver.buildRunner(
-                                        context: context,
-                                        session: _session,
-                                        actions: MissionActionCallbacks(
-                                          registerActivity:
-                                              _registerMissionActivity,
-                                          submitMathAnswer: (answer) async {
-                                            try {
-                                              return await ref
-                                                  .read(
-                                                    activeAlarmSessionControllerProvider,
-                                                  )
-                                                  .submitMathAnswer(answer);
-                                            } on PlatformException catch (
-                                              error
-                                            ) {
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      error.message ??
-                                                          error.code,
-                                                    ),
+                                    missionDriver.buildRunner(
+                                      context: context,
+                                      session: _session,
+                                      actions: MissionActionCallbacks(
+                                        registerActivity:
+                                            _registerMissionActivity,
+                                        refreshSession: () {
+                                          ref
+                                              .read(
+                                                activeAlarmSessionControllerProvider,
+                                              )
+                                              .refresh();
+                                        },
+                                        requestActivityRecognitionPermission: () => ref
+                                            .read(
+                                              activeAlarmSessionControllerProvider,
+                                            )
+                                            .requestActivityRecognitionPermission(),
+                                        submitMathAnswer: (answer) async {
+                                          try {
+                                            return await ref
+                                                .read(
+                                                  activeAlarmSessionControllerProvider,
+                                                )
+                                                .submitMathAnswer(answer);
+                                          } on PlatformException catch (error) {
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    error.message ?? error.code,
                                                   ),
-                                                );
-                                              }
-                                              return MathAnswerSubmissionResult
-                                                  .incorrect;
+                                                ),
+                                              );
                                             }
-                                          },
-                                        ),
+                                            return MathAnswerSubmissionResult
+                                                .incorrect;
+                                          }
+                                        },
                                       ),
                                     )
                                   else
@@ -286,9 +301,29 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
     return !_session.requiresMission || _session.awaitingMissionStart;
   }
 
-  void _syncMissionRefreshTimer() {
+  Duration get _remainingMissionQuietTime {
+    final missionTimeoutAt = _session.missionTimeoutAtLocal;
+    if (missionTimeoutAt == null) {
+      return Duration.zero;
+    }
+
+    final remaining = missionTimeoutAt.difference(DateTime.now());
+    if (remaining.isNegative) {
+      return Duration.zero;
+    }
+    return remaining;
+  }
+
+  void _syncMissionTimers() {
+    _countdownTimer?.cancel();
     _missionRefreshTimer?.cancel();
     if (_session.isMissionActive) {
+      _countdownTimer = Timer.periodic(_missionCountdownTick, (_) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {});
+      });
       _missionRefreshTimer = Timer(_missionRefreshDelay, () {
         if (!mounted) {
           return;
@@ -303,7 +338,7 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
       return;
     }
 
-    _syncMissionRefreshTimer();
+    _syncMissionTimers();
 
     final now = DateTime.now();
     if (_lastMissionPingAt != null &&
@@ -338,6 +373,60 @@ class _ActiveAlarmScreenState extends ConsumerState<ActiveAlarmScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(error.message ?? error.code)));
     }
+  }
+}
+
+class _MissionQuietTimer extends StatelessWidget {
+  const _MissionQuietTimer({required this.remaining, required this.total});
+
+  final Duration remaining;
+  final Duration total;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final remainingSeconds =
+        remaining.inSeconds + (remaining.inMilliseconds % 1000 == 0 ? 0 : 1);
+    final totalMillis = total.inMilliseconds;
+    final remainingFraction = totalMillis == 0
+        ? 0.0
+        : (remaining.inMilliseconds / totalMillis).clamp(0.0, 1.0);
+
+    return NeoPanel(
+      color: NeoColors.warm,
+      padding: const EdgeInsets.all(14),
+      borderWidth: 2,
+      shadowOffset: const Offset(3, 3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('QUIET TIMER', style: theme.textTheme.labelLarge),
+              const Spacer(),
+              Text('$remainingSeconds s', style: theme.textTheme.titleMedium),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 12,
+              value: remainingFraction,
+              backgroundColor: NeoColors.panel,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                NeoColors.success,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Keep interacting or the alarm rings again when this expires.',
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
   }
 }
 

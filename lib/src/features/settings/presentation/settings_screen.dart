@@ -237,10 +237,10 @@ class _DeviceDiagnosticsSection extends StatelessWidget {
                     ? 'Ready'
                     : 'Fix',
                 detail: !status.hasStepSensor
-                    ? 'This phone does not expose a usable step counter.'
+                    ? 'This phone does not expose a live step detector for interactive step missions.'
                     : status.activityRecognitionGranted
                     ? 'Step mission prerequisites are satisfied.'
-                    : 'Grant activity recognition for the steps mission.',
+                    : 'Grant or re-enable activity recognition. If Android stops prompting, the action below opens app settings.',
                 accent: !status.hasStepSensor
                     ? NeoColors.muted
                     : status.stepsMissionReady
@@ -249,7 +249,7 @@ class _DeviceDiagnosticsSection extends StatelessWidget {
                 actionLabel:
                     (!status.hasStepSensor || status.activityRecognitionGranted)
                     ? 'Ready'
-                    : 'Allow',
+                    : 'Grant / re-enable',
                 onAction:
                     (!status.hasStepSensor || status.activityRecognitionGranted)
                     ? null
