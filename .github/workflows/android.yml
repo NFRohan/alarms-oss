@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-and-build:
     runs-on: ubuntu-latest
@@ -30,6 +34,23 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Materialize signing files when release secrets are present
+        if: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          mkdir -p android/app
+          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > android/app/release-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=app/release-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -42,8 +63,17 @@ jobs:
       - name: Build debug APK
         run: flutter build apk --debug
 
-      - name: Upload APK artifact
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: alarms-oss-debug-apk
+          name: neoalarm-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload release verification APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neoalarm-release-verification-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

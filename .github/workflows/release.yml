@@ -1,12 +1,32 @@
-name: Release APK
+name: Distribute Android Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to publish, for example v0.1.0
+        required: true
+        type: string
+      draft:
+        description: Create or update the GitHub release as a draft
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: Mark the GitHub release as a prerelease
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   build-and-release:
@@ -15,6 +35,27 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release metadata
+        id: release_meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag_name="${{ inputs.tag_name }}"
+          else
+            tag_name="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ ! "$tag_name" =~ ^v.+$ ]]; then
+            echo "Release tags must start with v. Got: $tag_name" >&2
+            exit 1
+          fi
+
+          version="${tag_name#v}"
+          echo "tag_name=$tag_name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -28,13 +69,34 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Materialize signing files when release secrets are present
-        if: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+      - name: Require Android signing secrets
         env:
           ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          missing=0
+          for name in ANDROID_SIGNING_KEYSTORE_BASE64 ANDROID_KEY_ALIAS ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required secret: $name" >&2
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Signed distribution is blocked until all Android signing secrets are configured." >&2
+            exit 1
+          fi
+
+      - name: Materialize signing files
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
         run: |
           mkdir -p android/app
           echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > android/app/release-keystore.jks
@@ -48,27 +110,85 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
       - name: Build release APK
         run: flutter build apk --release
 
+      - name: Build release app bundle
+        run: flutter build appbundle --release
+
       - name: Prepare release assets
+        id: dist
+        shell: bash
         run: |
+          version="${{ steps.release_meta.outputs.version }}"
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk "dist/alarms-oss-${GITHUB_REF_NAME#v}-release.apk"
-          sha256sum "dist/alarms-oss-${GITHUB_REF_NAME#v}-release.apk" > "dist/alarms-oss-${GITHUB_REF_NAME#v}-release.apk.sha256"
+
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/neoalarm-${version}-release.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "dist/neoalarm-${version}-release.aab"
+
+          if [ -f build/app/outputs/mapping/release/mapping.txt ]; then
+            cp build/app/outputs/mapping/release/mapping.txt "dist/neoalarm-${version}-mapping.txt"
+          fi
+
+          sha256sum dist/* > "dist/neoalarm-${version}-checksums.txt"
+
+          cat > "dist/neoalarm-${version}-build-info.txt" <<EOF
+          tag=${{ steps.release_meta.outputs.tag_name }}
+          version=${version}
+          commit=${GITHUB_SHA}
+          run_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          built_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          EOF
 
       - name: Upload release build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: alarms-oss-release-apk
+          name: neoalarm-release-${{ steps.release_meta.outputs.version }}
           path: dist/*
 
       - name: Publish GitHub release assets
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release_meta.outputs.tag_name }}
+          DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || 'false' }}
+          PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || 'false' }}
+        shell: bash
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
+          release_flags=()
+
+          if [ "$DRAFT" = "true" ]; then
+            release_flags+=(--draft)
           fi
+
+          if [ "$PRERELEASE" = "true" ]; then
+            release_flags+=(--prerelease)
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" dist/* --clobber
+          else
+            gh release create "$TAG_NAME" dist/* --generate-notes --target "$GITHUB_SHA" "${release_flags[@]}"
+          fi
+
+      - name: Write workflow summary
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## NeoAlarm release distribution
+
+          - Tag: \`${{ steps.release_meta.outputs.tag_name }}\`
+          - Version: \`${{ steps.release_meta.outputs.version }}\`
+          - Commit: \`${GITHUB_SHA}\`
+          - Assets:
+            - signed APK
+            - signed app bundle
+            - checksum manifest
+            - build metadata
+            - ProGuard mapping file when available
+          EOF

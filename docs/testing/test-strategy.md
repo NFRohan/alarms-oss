@@ -229,9 +229,10 @@ If a release-only regression is found, do not guess at broad keep rules first. N
 The repository now includes these GitHub Actions workflows:
 
 - `Android CI`: `flutter analyze`, `flutter test`, debug APK build, and artifact upload
+- `Android CI`: `flutter analyze`, `flutter test`, debug APK build, release APK verification build, and artifact upload
 - `CodeQL`: SAST for Android code and workflow code
 - `Dependency Review`: pull-request dependency-risk review
-- `Release APK`: release APK build and GitHub release publishing on `v*` tags
+- `Distribute Android Release`: signed release APK and app bundle build plus GitHub release publishing on `v*` tags or manual workflow dispatch
 
 This does not eliminate the manual device matrix, but it does move security and artifact discipline into the default engineering loop instead of leaving them as release-week tasks.
 

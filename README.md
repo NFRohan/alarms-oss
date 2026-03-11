@@ -201,6 +201,12 @@ Current local release setup:
 - a base64 export suitable for GitHub Actions secrets can be generated or stored under `.artifacts/signing`
 - public release artifacts should use the real signing path, not the debug-sign fallback
 
+To sync the local signing material into GitHub Actions secrets with the authenticated GitHub CLI:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/github/sync_android_signing_secrets.ps1
+```
+
 Optional GitHub Actions secrets for signed release artifacts:
 
 - `ANDROID_SIGNING_KEYSTORE_BASE64`
@@ -216,15 +222,28 @@ GitHub Actions currently provides:
   - `flutter analyze`
   - `flutter test`
   - debug APK build
+  - release APK verification build
   - artifact upload
 - `CodeQL`
   - source-level SAST for Android code and workflow code
 - `Dependency Review`
   - dependency-risk / CVE review on pull requests
-- `Release APK`
-  - release APK build and GitHub release publishing on `v*` tags
+- `Distribute Android Release`
+  - signed release APK and app bundle build
+  - checksum and build metadata generation
+  - GitHub release publishing on `v*` tags
+  - manual `workflow_dispatch` distribution for a chosen tag
 
 Release builds are not considered verified until the minified APK has been installed and smoke-tested on a real device.
+
+## Distribution Workflow
+
+There are two supported distribution paths:
+
+- push a tag like `v0.1.0` to trigger the signed release workflow automatically
+- run the `Distribute Android Release` workflow manually with a `tag_name`
+
+The distribution workflow requires all four Android signing secrets. Unlike local release verification builds, it fails closed if those secrets are missing.
 
 ## Testing Strategy
 
