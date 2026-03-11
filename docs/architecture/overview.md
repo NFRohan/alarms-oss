@@ -9,6 +9,12 @@ The app is intentionally split into two execution domains:
 
 This split exists because alarm correctness cannot depend on the Flutter isolate being alive when the device wakes from Doze or when the app process has been reclaimed.
 
+Direct-boot note:
+
+- Flutter startup is treated as a conditional shell, not an always-safe initialization environment
+- native code decides whether the device is unlocked
+- before first unlock, Flutter may show active alarm UI but otherwise stays on a minimal direct-boot-safe screen instead of loading the full dashboard
+
 ## Core Subsystems
 
 ### Alarm Domain
@@ -20,10 +26,16 @@ Owns alarm definitions, repeat rules, snooze policy, mission configuration, and 
 Owns:
 
 - exact scheduling via `AlarmManager.setAlarmClock()`
-- boot/time/timezone reschedule handling
+- boot/time/timezone reschedule handling, including `LOCKED_BOOT_COMPLETED`
 - active ring session state
 - foreground ringing service
 - wake handling and lock-screen launch
+
+Security note:
+
+- lock-screen/full-screen alarm window flags are authorized by persisted active-session state, not by a forgeable incoming activity action
+- exported reschedule entry points are constrained to expected system actions and treated defensively
+- local persistence is device-protected for alarm/session recovery and Android auto-backup is disabled for MVP
 
 ### Mission Platform
 
@@ -65,7 +77,7 @@ This keeps the QR mission fast today and makes future on-device object detection
 1. Android receives the alarm broadcast at the scheduled time.
 2. A native foreground service starts immediately.
 3. Audio, vibration, wakelock, and session persistence begin before Flutter UI is required.
-4. A full-screen alarm activity launches over the lock screen.
+4. A full-screen alarm activity launches over the lock screen only when native session state confirms that an alarm is active.
 
 ### Mission Completion
 
@@ -88,6 +100,8 @@ If the app process dies while an alarm is ringing, the native session state rema
 
 If the process dies while a mission is active, the session should still restore into the mission flow. The alarm engine, not Flutter route state, decides whether the app should show a ringing alarm, a mission in progress, or the dashboard.
 
+If the device reboots before first unlock, direct-boot-aware components can still read persisted alarm and session state from device-protected storage, rebuild the exact schedules, and preserve alarm behavior across restart.
+
 ## Active Session State Machine
 
 The current active session has three persisted states:
@@ -105,8 +119,12 @@ See [active-session-lifecycle.md](active-session-lifecycle.md) for the full stat
 ## Key Invariants
 
 - Alarm delivery must not depend on a live Flutter isolate.
+- Reboot recovery before first unlock must depend on device-protected alarm/session persistence, not credential-protected defaults.
+- Flutter startup before first unlock must stay minimal and must not assume arbitrary plugin initialization is safe.
 - Ring audio must start before any mission UI dependency is satisfied.
+- Alarm-only lock-screen/full-screen UI must depend on native active-session state, not on incoming intent claims alone.
 - Persisted alarm state and persisted ring-session state must be recoverable independently.
+- Local alarm and mission persistence must not be silently exported through Android auto-backup defaults in MVP.
 - Mission silence must not depend on a Flutter-only timer.
 - Mission silence must depend on mission-valid activity, not generic taps anywhere on the screen.
 - A mission may be silent only while the native session is actively enforcing user engagement.

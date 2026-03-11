@@ -18,6 +18,7 @@ This project should feel predictable to a senior engineer reading it for the fir
 - Native Android owns scheduling, service lifecycle, wake behavior, and frame analysis.
 - Missions extend through stable contracts. They should not reach into scheduler internals.
 - Vision missions consume analyzer results, not arbitrary camera access from multiple layers.
+- Startup-time Flutter code must be treated as direct-boot-sensitive. Do not add eager plugin initialization or unlocked-only assumptions to `main.dart` or root app bootstrap code without documenting and verifying them.
 
 ## Testing Expectations
 

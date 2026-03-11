@@ -67,6 +67,66 @@ The project exists partly as a rejection of ad-driven alarm apps. The cleanest w
 
 This also improves reliability. An alarm should not degrade because a remote service changed or became unavailable.
 
+## Why Alarm Persistence Lives In Device-Protected Storage
+
+There is an important difference between:
+
+- data that is private to the app after unlock
+- data that must still be available before first unlock after reboot
+
+An alarm app needs the second category for alarm-critical state.
+
+Android clears scheduled alarms on reboot. If the app wants to restore them on `BOOT_COMPLETED` and `LOCKED_BOOT_COMPLETED`, it has to read persisted alarm definitions at that moment. Credential-protected storage is too late for that.
+
+That is why alarm definitions and active ring-session state live in device-protected storage instead of normal app-private credential storage.
+
+This is not a casual storage choice. It is a reliability decision:
+
+- reboot recovery should not wait for first unlock
+- exact alarm rebuilding should work in direct boot mode
+- active alarm state should remain consistent with how the scheduler is restored
+
+This does increase the importance of local security controls. Once alarm-critical persistence becomes direct-boot readable, backup policy and exported-component discipline matter even more. That is one reason the project also disables Android auto-backup in MVP and treats the security model as part of the architecture.
+
+## Why Flutter Startup Must Stay Minimal In Direct Boot
+
+Direct boot introduces a trap that is easy to miss in Flutter projects.
+
+The Flutter engine can start and render UI before first unlock, but not every plugin or startup-time package is safe in that environment. A dependency that assumes credential-protected preferences, normal file access, or a fully unlocked user session can crash the Flutter side even while the native alarm engine is behaving correctly.
+
+That is why the project treats Flutter startup as a constrained surface:
+
+- `main.dart` should remain minimal
+- no nonessential plugin initialization should happen eagerly at startup
+- unlocked state must be confirmed explicitly through the native layer
+- before first unlock, the app should show only alarm-critical UI or a minimal holding screen
+
+This is a hard boundary, not a style preference.
+
+If contributors casually add startup dependencies without thinking about direct boot, they can break exactly the scenario the native alarm engine was designed to survive.
+
+## Why Local-First Still Needs A Tight Attack Surface
+
+Local-first is not the same thing as low-risk.
+
+An alarm app still exposes security-sensitive behavior:
+
+- it can wake the screen
+- it can take over the lock-screen experience
+- it can schedule work to run later without user interaction
+- it stores mission state and alarm definitions locally
+
+That means the project has to care about local attack surface, not just network attack surface.
+
+The right standard is:
+
+- another app should not be able to trigger alarm-only UI states casually
+- internal reschedule and ringing paths should not be open to arbitrary external callers
+- local persistence should not quietly escape into backup flows if the product promises on-device privacy
+- release distribution should use proper signing hygiene rather than debug-era defaults
+
+For this project, security is therefore mostly about component boundaries, permission use, persistence policy, and exported-surface discipline.
+
 ## Why The Active Alarm Needs A Real State Machine
 
 An active alarm is not just "currently ringing" or "not ringing."
@@ -246,6 +306,110 @@ If QR is implemented as a disposable plugin tied to one screen, future object-re
 - mission logic reacts to analyzer results
 
 That keeps v1 practical while making future TinyML or TFLite work a matter of swapping analyzers, not redesigning ownership.
+
+## Security Audit Snapshot: March 11, 2026
+
+A source audit of the Android and Flutter codebase on March 11, 2026 found four issues worth recording before wider distribution.
+
+### 1. Full-Screen Alarm UI Must Not Trust A Forgeable Activity Action
+
+The launcher activity is exported because it has to be launchable by the system and the user.
+
+That is fine.
+
+What is not fine is letting an external caller supply an action string that is treated as sufficient proof that the activity should behave like an active alarm surface.
+
+The current implementation allows the window to enter alarm-style lock-screen/full-screen mode when the activity sees the internal alarm action, even if that action was supplied from outside the app.
+
+That is the wrong trust boundary.
+
+The correct boundary is the persisted active ring session. A full-screen alarm experience should become active because the native alarm engine says there is an active alarm, not because an incoming intent claims there is one.
+
+### 2. Local-Only Storage Must Not Leak Into Backup By Accident
+
+The product promise is local-first and on-device.
+
+Right now, alarm definitions and active mission/session data are stored in app-private preferences, which is acceptable for MVP persistence. But if backup is left enabled by default, that data may still flow into Android backup and device-transfer paths.
+
+That is not a cryptographic break, but it is a real policy mismatch:
+
+- alarm schedules are personal behavior data
+- QR mission targets are part of dismissal configuration
+- active session state is operational alarm data the user may reasonably assume stays only on the handset
+
+If the project says "everything stays on-device," backup behavior has to be an intentional decision rather than a platform default.
+
+### 3. Exported Reschedule Paths Must Be Narrow And Defensive
+
+The boot/time/timezone reschedule receiver exists for legitimate system broadcasts.
+
+That is also fine.
+
+The risk comes from treating an exported receiver as a harmless utility surface. An exported receiver that immediately performs alarm rescheduling is part of the app's privileged behavior. If another app can explicitly target it, the receiver should still behave defensively:
+
+- validate that the action is one of the allowed system reschedule triggers
+- avoid turning scheduling failures into crash loops
+- treat repeated external invocation as hostile noise, not as a normal caller pattern
+
+This matters because alarm reliability work often creates exactly the sort of components that need strict exported-surface discipline.
+
+### 4. Public Releases Need Real Signing Hygiene
+
+The current release build configuration still uses the debug signing config.
+
+That is acceptable for local development and device testing. It is not acceptable for public release engineering.
+
+If contributors or users install public builds, release artifacts need:
+
+- a dedicated release keystore
+- controlled signing in CI or release infrastructure
+- a clean distinction between local debug convenience and real distributed artifacts
+
+This is less about an in-app exploit and more about treating distribution as part of the security model.
+
+### What This Audit Means For The Project
+
+The main lesson is that an alarm app should be treated as a system-behavior app, not just a utility UI.
+
+Even without a backend and even without internet permission, the app still controls high-impact device behavior. That means the engineering bar has to include:
+
+- exported component review
+- storage and backup policy review
+- release signing discipline
+- regular security audits alongside reliability audits
+
+These findings are recorded here because they affect architecture, not just cleanup. They are part of the engineering story of the project and should stay visible until they are resolved.
+
+The initial mitigation pass adopted four concrete policies:
+
+- lock-screen/full-screen alarm presentation is now authorized by persisted active-session state rather than a forgeable activity action
+- Android auto-backup is disabled for MVP so local alarm and mission state does not quietly escape into backup flows
+- the exported reschedule receiver now accepts only the expected system actions and treats failures defensively
+- release signing moved to a local `key.properties` strategy with CI-secret support and a deliberate debug fallback for non-distribution builds
+
+Those changes matter because they reinforce a broader rule: convenience boundaries are not security boundaries. Internal action strings, platform defaults, and development signing shortcuts are acceptable only when they do not weaken the trust model of the product.
+
+## Why The Release Pipeline Is Part Of The Security Model
+
+It is tempting to treat CI and release automation as separate from application security.
+
+For this project, that would be a mistake.
+
+The release pipeline decides:
+
+- whether static analysis runs continuously
+- whether dependency-risk changes are reviewed automatically
+- whether release artifacts are reproducible
+- whether signing material is handled explicitly or implicitly
+
+That is why the repository now treats CI as part of the engineering boundary:
+
+- build/test automation catches regressions
+- CodeQL covers source-level SAST
+- dependency review covers dependency-surface changes
+- tagged release workflows define how installable APKs are produced and published
+
+This is not bureaucracy. It is how an open-source app avoids shipping a different engineering standard than the one its source code claims to follow.
 
 ## Why The Documentation Must Be Strong
 

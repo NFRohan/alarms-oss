@@ -32,6 +32,7 @@ This project treats documentation as part of the engineering surface, not as a c
 
 - [testing/test-strategy.md](testing/test-strategy.md)
 - [planning/sprint-plan.md](planning/sprint-plan.md)
+- [adr/0006-security-hardening-and-release-pipeline.md](adr/0006-security-hardening-and-release-pipeline.md)
 
 ### I want to implement or review alarm delivery behavior
 
@@ -40,6 +41,9 @@ This project treats documentation as part of the engineering surface, not as a c
 - [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md)
 - [adr/0004-mission-confirmation-and-inactivity-retrigger.md](adr/0004-mission-confirmation-and-inactivity-retrigger.md)
 - [adr/0005-detector-driven-steps-and-mission-activity-policy.md](adr/0005-detector-driven-steps-and-mission-activity-policy.md)
+- [adr/0006-security-hardening-and-release-pipeline.md](adr/0006-security-hardening-and-release-pipeline.md)
+- [adr/0007-direct-boot-alarm-persistence.md](adr/0007-direct-boot-alarm-persistence.md)
+- [adr/0008-direct-boot-safe-flutter-startup.md](adr/0008-direct-boot-safe-flutter-startup.md)
 
 ### I want to work on QR or future vision missions
 
@@ -61,6 +65,8 @@ This project treats documentation as part of the engineering surface, not as a c
 
 - [contributing/engineering-standards.md](contributing/engineering-standards.md)
 - [contributing/mission-authoring.md](contributing/mission-authoring.md)
+- [adr/0006-security-hardening-and-release-pipeline.md](adr/0006-security-hardening-and-release-pipeline.md)
+- [adr/0008-direct-boot-safe-flutter-startup.md](adr/0008-direct-boot-safe-flutter-startup.md)
 
 ## Documentation Layers
 

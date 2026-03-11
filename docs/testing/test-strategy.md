@@ -17,6 +17,7 @@ The correct model is a layered test ladder:
 - catch logic regressions before they reach devices
 - validate Flutter-to-native bridge behavior without relying only on manual testing
 - build APKs and test artifacts even when local Android tooling is incomplete
+- catch release-only regressions introduced by minification and resource shrinking
 - prove the MVP on actual Android hardware before release
 - keep reliability claims grounded in repeatable checks
 
@@ -30,6 +31,7 @@ GitHub Actions is sufficient for:
 - running emulator-based Android instrumentation tests
 - publishing build artifacts for download and review
 - orchestrating cloud device tests such as Firebase Test Lab runs
+- running repository security automation such as SAST and dependency-risk checks
 
 That means the lack of a full local Android toolchain is not a blocker for setting up CI, building APKs, or getting early automated feedback.
 
@@ -120,6 +122,7 @@ Cover:
 
 - overnight Doze behavior
 - reboot recovery
+- reboot recovery before first unlock
 - manual time and timezone changes
 - overlapping alarms
 - full-screen launch from lock screen
@@ -140,6 +143,44 @@ Target at least:
 
 This is the only layer that can honestly support reliability claims for an alarm product.
 
+Direct-boot note:
+
+- after adding `LOCKED_BOOT_COMPLETED` support, manual testing should include at least one alarm configured before reboot, then a restart without first unlocking the device, to confirm that schedules are rebuilt from device-protected storage rather than only after unlock
+- direct-boot testing should also confirm that the Flutter shell does not load the full dashboard before unlock and that no startup-time plugin initialization crashes the app during a pre-unlock launch
+
+## Post-Minification Verification
+
+Release confidence for this project cannot stop at a passing debug APK.
+
+The release build enables R8 minification and resource shrinking. That means the repository must explicitly verify the installed release artifact after shrinking, not just assume that a successful `flutter build apk --release` is enough.
+
+Why this matters:
+
+- method-channel and native bridge failures can appear only in release builds
+- manifest-driven entry points can behave differently once the app is optimized
+- resource shrinking can remove assets or references that debug builds still carry
+- alarm apps are unusually sensitive to release-only regressions because the failure often appears only when the phone is idle, locked, or waking up
+
+When to run it:
+
+- before every tagged release
+- after changes to native bridge code, manifest wiring, mission runtime code, startup/bootstrap logic, or QR/vision code
+- after enabling or changing shrinker rules
+
+Minimum post-minification checklist:
+
+- build the release APK with `flutter build apk --release`
+- install the release APK on a real device
+- launch the app and confirm the dashboard or direct-boot-safe shell loads correctly
+- create, edit, enable, and disable alarms
+- let an alarm fire and confirm the ringing service, notification, and full-screen alarm UI still work
+- complete at least one mission flow for each implemented mission type
+- confirm service teardown after mission completion or dismiss
+- inspect `adb logcat` for release-only failures such as `ClassNotFoundException`, `NoSuchMethodError`, plugin registration failures, or unexpected permission/security exceptions
+- inspect `dumpsys activity services` or equivalent state to confirm no ringing service is left behind after completion
+
+If a release-only regression is found, do not guess at broad keep rules first. Narrow the failure to the affected class, entry point, or resource path, then add the smallest defensible shrinker rule needed to protect it.
+
 ## CI Recommendation
 
 ### Pull Request Workflow
@@ -150,19 +191,40 @@ This is the only layer that can honestly support reliability claims for an alarm
 - run Dart and Kotlin unit tests
 - build a debug APK
 - upload the APK as a workflow artifact
+- run dependency review on dependency changes
+- run CodeQL on the repository's scheduled or mainline cadence
 
 ### Main Branch Workflow
 
 - run the pull request workflow checks
 - run emulator smoke tests
 - publish a debug or internal QA APK artifact
+- publish CodeQL results to GitHub code scanning
 
 ### Nightly Or Release Workflow
 
 - build a release-mode APK or AAB
+- run post-minification verification against the installed release artifact
 - run the Firebase Test Lab suite
 - collect screenshots, logs, and test artifacts
 - fail the workflow on device-test regressions
+- publish signed or fallback-signed release artifacts in a controlled workflow
+
+## Current Repository Automation
+
+The repository now includes these GitHub Actions workflows:
+
+- `Android CI`: `flutter analyze`, `flutter test`, debug APK build, and artifact upload
+- `CodeQL`: SAST for Android code and workflow code
+- `Dependency Review`: pull-request dependency-risk review
+- `Release APK`: release APK build and GitHub release publishing on `v*` tags
+
+This does not eliminate the manual device matrix, but it does move security and artifact discipline into the default engineering loop instead of leaving them as release-week tasks.
+
+Current release note:
+
+- release builds are now minified and shrink resources
+- release verification is not complete until the minified APK has been installed and smoke-tested on a real device
 
 ## Practical Answer For This Repo
 
@@ -175,6 +237,7 @@ Yes, GitHub Actions can be the control plane for real-device testing, but not by
 So the sensible setup is:
 
 - GitHub Actions for builds, lint, unit tests, widget tests, and emulator tests
+- GitHub Actions CodeQL and dependency review for baseline security automation
 - Firebase Test Lab for real-device instrumentation runs
 - a small manual device matrix before release for alarm-specific reliability behavior
 
