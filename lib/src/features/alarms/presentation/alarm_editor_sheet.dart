@@ -124,7 +124,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Color(0x22FFFF00),
                   border: Border(
                     top: BorderSide(color: NeoColors.ink, width: 3),
@@ -662,19 +662,21 @@ class _PeriodChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = active ? NeoColors.primary : NeoColors.panel;
+
     return Container(
       width: 54,
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: active ? NeoColors.primary : NeoColors.panel,
+        color: backgroundColor,
         border: Border.all(color: NeoColors.ink, width: 2),
       ),
       alignment: Alignment.center,
       child: Text(
         label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelLarge?.copyWith(color: NeoColors.ink),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: NeoColors.foregroundOn(backgroundColor),
+        ),
       ),
     );
   }
@@ -710,17 +712,24 @@ class _CountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = selected ? NeoColors.primary : NeoColors.panel;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: selected ? NeoColors.primary : NeoColors.panel,
+          color: backgroundColor,
           border: Border.all(color: NeoColors.ink, width: 2),
         ),
         alignment: Alignment.center,
-        child: Text('$count', style: Theme.of(context).textTheme.titleMedium),
+        child: Text(
+          '$count',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: NeoColors.foregroundOn(backgroundColor),
+          ),
+        ),
       ),
     );
   }
@@ -738,7 +747,7 @@ class _EditorWarning extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF2EE),
+        color: NeoColors.warningSurface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
@@ -756,7 +765,7 @@ class _EditorWarning extends StatelessWidget {
             Text(
               detail,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF56483A),
+                color: NeoColors.warningText,
                 height: 1.4,
               ),
             ),

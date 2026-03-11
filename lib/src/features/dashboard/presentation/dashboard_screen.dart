@@ -4,6 +4,7 @@ import 'package:neoalarm/src/features/alarms/application/alarm_list_controller.d
 import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
 import 'package:neoalarm/src/features/alarms/presentation/alarm_editor_sheet.dart';
+import 'package:neoalarm/src/features/settings/application/theme_mode_controller.dart';
 import 'package:neoalarm/src/features/settings/presentation/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +49,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   Widget build(BuildContext context) {
     final alarms = ref.watch(alarmListControllerProvider);
     final engineStatus = ref.watch(alarmEngineStatusProvider);
+    final themeMode = ref.watch(appThemeModeControllerProvider);
     final showAddAlarm = _selectedTab == _DashboardTab.alarms;
 
     return PopScope<Object?>(
@@ -68,6 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: NeoSquareIconButton(
                   icon: Icons.add,
                   backgroundColor: NeoColors.primary,
+                  foregroundColor: NeoColors.accentInk,
                   size: 76,
                   onPressed: () {
                     _createAlarm(context, ref, engineStatus.asData?.value);
@@ -106,11 +109,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               : SettingsScreen(
                   key: const ValueKey('settings-tab'),
                   status: engineStatus,
+                  themeMode: themeMode,
                   onBack: () {
                     setState(() {
                       _selectedTab = _DashboardTab.alarms;
                     });
                   },
+                  onSetDarkModeEnabled: (enabled) => ref
+                      .read(appThemeModeControllerProvider.notifier)
+                      .setDarkModeEnabled(enabled),
                   onRequestExactAlarmAccess: () {
                     _requestExactAlarmPermission(context);
                   },
@@ -348,6 +355,7 @@ class _DashboardHeader extends StatelessWidget {
         NeoSquareIconButton(
           icon: Icons.settings,
           backgroundColor: NeoColors.cyan,
+          foregroundColor: NeoColors.accentInk,
           size: 52,
           onPressed: onOpenSettings,
         ),
@@ -657,46 +665,43 @@ class _InfoBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      color: const Color(0xFFFFFBF4),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 14,
-              height: 14,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(999),
-              ),
+    return NeoPanel(
+      color: NeoColors.warm,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 14,
+            height: 14,
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(999),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    detail,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF56483A),
-                      height: 1.45,
-                    ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  detail,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: NeoColors.warningText,
+                    height: 1.45,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

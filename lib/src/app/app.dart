@@ -3,18 +3,21 @@ import 'package:neoalarm/src/features/alarms/application/active_alarm_session_co
 import 'package:neoalarm/src/features/alarms/presentation/active_alarm_screen.dart';
 import 'package:neoalarm/src/features/app_startup/application/app_startup_controller.dart';
 import 'package:neoalarm/src/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:neoalarm/src/features/settings/application/theme_mode_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AlarmApp extends StatelessWidget {
+class AlarmApp extends ConsumerWidget {
   const AlarmApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(appThemeModeControllerProvider).asData?.value;
+
     return MaterialApp(
       title: 'NeoAlarm',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildAppTheme(isDark: themeMode == ThemeMode.dark),
       home: const _AlarmAppShell(),
     );
   }

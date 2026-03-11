@@ -6,11 +6,17 @@ import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
 import 'package:neoalarm/src/features/app_startup/domain/app_startup_context.dart';
+import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('renders dashboard shell', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -67,6 +73,33 @@ void main() {
 
     expect(find.text('SETTINGS'), findsNothing);
     expect(find.text('NeoAlarm'), findsOneWidget);
+  });
+
+  testWidgets('shows and toggles dark mode from settings', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          alarmRepositoryProvider.overrideWithValue(_FakeAlarmRepository()),
+        ],
+        child: const AlarmApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Dark mode'), findsOneWidget);
+
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(scaffold.backgroundColor, isNot(const Color(0xFF11151A)));
+
+    await tester.tap(find.byType(NeoToggle));
+    await tester.pumpAndSettle();
+
+    final darkScaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(darkScaffold.backgroundColor, const Color(0xFF11151A));
   });
 }
 

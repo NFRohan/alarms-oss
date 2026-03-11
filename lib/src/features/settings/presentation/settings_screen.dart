@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     required this.status,
+    required this.themeMode,
     required this.onBack,
+    required this.onSetDarkModeEnabled,
     required this.onRequestExactAlarmAccess,
     required this.onRequestNotificationAccess,
     required this.onRequestBatteryOptimizationExemption,
@@ -17,7 +19,9 @@ class SettingsScreen extends StatelessWidget {
   });
 
   final AsyncValue<AlarmEngineStatus> status;
+  final AsyncValue<ThemeMode> themeMode;
   final VoidCallback onBack;
+  final ValueChanged<bool> onSetDarkModeEnabled;
   final VoidCallback onRequestExactAlarmAccess;
   final VoidCallback onRequestNotificationAccess;
   final VoidCallback onRequestBatteryOptimizationExemption;
@@ -70,14 +74,26 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('LOCAL-FIRST', style: theme.textTheme.headlineMedium),
+                Text(
+                  'LOCAL-FIRST',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: NeoColors.accentInk,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Everything stays on-device. Use this page to clear Android warnings before relying on alarm missions.',
-                  style: theme.textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: NeoColors.accentInk,
+                  ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 18),
+          _AppearanceSection(
+            themeMode: themeMode,
+            onSetDarkModeEnabled: onSetDarkModeEnabled,
           ),
           const SizedBox(height: 18),
           _AlarmReadinessCard(status: status),
@@ -91,6 +107,70 @@ class SettingsScreen extends StatelessWidget {
             onRequestCameraPermission: onRequestCameraPermission,
             onRequestActivityRecognitionPermission:
                 onRequestActivityRecognitionPermission,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppearanceSection extends StatelessWidget {
+  const _AppearanceSection({
+    required this.themeMode,
+    required this.onSetDarkModeEnabled,
+  });
+
+  final AsyncValue<ThemeMode> themeMode;
+  final ValueChanged<bool> onSetDarkModeEnabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkModeEnabled = themeMode.asData?.value == ThemeMode.dark;
+    final isLoading = themeMode.isLoading;
+
+    return NeoPanel(
+      color: NeoColors.panel,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: NeoColors.success,
+              border: Border.all(color: NeoColors.ink, width: 2),
+            ),
+            child: const Icon(
+              Icons.dark_mode,
+              size: 24,
+              color: NeoColors.accentInk,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Appearance', style: theme.textTheme.headlineMedium),
+                const SizedBox(height: 6),
+                Text(
+                  isDarkModeEnabled
+                      ? 'Dark mode is enabled for the main app shell.'
+                      : 'Use the light neobrutalist palette or switch to a darker shell.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: NeoColors.subtext,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('Dark mode', style: theme.textTheme.titleMedium),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          NeoToggle(
+            value: isDarkModeEnabled,
+            onChanged: isLoading ? null : onSetDarkModeEnabled,
           ),
         ],
       ),
