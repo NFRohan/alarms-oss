@@ -1,0 +1,7 @@
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path_android: "assets/alarm-clock-foreground.png"
+  adaptive_icon_foreground: "assets/alarm-clock-foreground.png"
+  adaptive_icon_background: "#F8F8F5"
+  min_sdk_android: 21
