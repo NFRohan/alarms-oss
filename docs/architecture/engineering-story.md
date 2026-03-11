@@ -409,6 +409,290 @@ These changes matter because they improve three things at once:
 
 That combination is the real goal of the optimization work. The project should feel faster because the architecture became tighter, not because the code accumulated isolated performance tricks.
 
+### Performance Tooling Response
+
+Once the runtime optimizations were in place, the next requirement was repeatability.
+
+It is not enough to say:
+
+- startup feels fast
+- the app seems idle
+- a trace looked okay one time on one phone
+
+That is why the repository now carries its own Android performance toolchain:
+
+- a Macrobenchmark module for repeatable cold-start measurement on a connected device
+- a manual Perfetto capture script for focused trace collection outside the benchmark harness
+- a dependency-audit script that proves where unexpected Android background work is entering the app graph
+
+This matters because performance work easily drifts into folklore if the only evidence is a few `adb` commands typed from memory. The repository now has a documented path from measurement to trace artifacts to architectural interpretation.
+
+### Why The Benchmark Variant Is Release-Like But Not Minified
+
+The benchmark target uses a dedicated `benchmark` build type rather than pointing directly at the normal `release` APK.
+
+That decision was not made because a benchmark build should behave differently from release. It was made because the benchmark harness and the shipped release artifact answer different questions.
+
+The benchmark build type is configured to be:
+
+- non-debuggable
+- release-like in code generation and runtime shape
+- debug-signed for local installation
+- stable under repeated local benchmarking
+
+It intentionally skips minification and resource shrinking.
+
+Why:
+
+- the real `release` APK is already validated separately with minification enabled
+- the synthetic `benchmark` build type hit Flutter-plugin and shrinker edge cases that made the benchmarking target less stable than the shipped artifact
+- benchmark repeatability is more important here than perfectly duplicating the release packaging pipeline
+
+This is a pragmatic split:
+
+- Macrobenchmark measures a stable release-like target
+- release smoke validation measures the real minified artifact
+
+Both are necessary, and neither replaces the other.
+
+### Why `profileinstaller` Is Now An Explicit App Dependency
+
+The first real benchmark run on the Android 16 test device exposed a tooling problem rather than a product problem: the app was still using an older transitive `profileinstaller` version through Flutter's dependency graph.
+
+That was invisible until Macrobenchmark tried to drive compilation behavior on a modern Android version.
+
+The fix was to pin `androidx.profileinstaller:profileinstaller:1.4.1` explicitly in the app module.
+
+That choice is worth recording because it is part of the performance contract now. The benchmark harness depends on the target app having a sufficiently recent profile installer, and the repository should state that dependency intentionally rather than inheriting it by accident.
+
+### Why `profileable` Lives Only In The Benchmark Variant
+
+The benchmark harness needs shell-driven profiling access. The shipped app does not need to expose that surface globally.
+
+The project therefore split those concerns cleanly:
+
+- the dedicated `benchmark` target manifest carries `android:profileable="shell=true"`
+- the shipped app manifest does not
+
+That keeps the profiling workflow available for repeatable local performance work without widening the production manifest more than necessary.
+
+### Why The DataTransport Jobs Are Accepted For Now
+
+The device audit found short `com.google.android.datatransport.runtime` jobs even while NeoAlarm was otherwise idle.
+
+The important engineering question was whether that work belonged to the app or to a dependency.
+
+The Gradle dependency audit answered that clearly:
+
+- the jobs come from the ML Kit barcode-scanning stack used by the QR mission
+- they are not being scheduled by the alarm engine
+- they are not evidence of accidental polling or leftover foreground-service behavior
+
+That does not make them irrelevant. A local-first alarm app should still be suspicious of dependency-level background work.
+
+But the correct decision for the current product stage is to track and document that cost, not to panic-refactor around it immediately. The QR mission is a core feature, and the observed jobs are small compared with the user value of the current scanner pipeline.
+
+The future escape hatches are already clear:
+
+- replace the QR stack with a lighter decoder
+- move QR into a separate flavor or optional module
+- keep the core alarm package free of ML Kit in a reduced build
+
+Those are real product/architecture tradeoffs. For now, the project chooses capability plus visibility over premature surgery.
+
+## Storage Audit Snapshot: March 11, 2026
+
+An on-device storage audit on March 11, 2026 was triggered by a simple but important question: why does a build with only one configured alarm appear to consume roughly 300 MB of internal storage?
+
+The answer is that almost all of that footprint comes from debug-install runtime payload, not from alarm data.
+
+### What The Audit Found
+
+The installed package on device was a debuggable build with these key numbers:
+
+- installed `base.apk`: `214,677,988` bytes
+- app-private data directory total: about `73 MB`
+- `shared_prefs`: about `20 KB`
+- `files`: about `7.5 KB`
+- `databases`: about `56 KB`
+- `code_cache`: about `297 KB`
+- `app_flutter`: about `73 MB`
+
+The important finding inside `app_flutter` was that the debug runtime had copied Flutter assets into app-private storage:
+
+- `app_flutter/flutter_assets/kernel_blob.bin`: about `64.9 MB`
+- `app_flutter/flutter_assets/isolate_snapshot_data`: about `11.0 MB`
+- `app_flutter/flutter_assets/vm_snapshot_data`: about `15 KB`
+
+That means the large number the user sees is dominated by two debug-era buckets:
+
+- the installed debug APK itself
+- duplicated Flutter debug assets in app-private storage
+
+The persisted alarm data is tiny by comparison. One configured alarm does not explain the reported footprint.
+
+### Why This Matters
+
+This audit established an important engineering rule for the project:
+
+- debug-install size is not a meaningful proxy for shipped-app size
+
+For NeoAlarm, debug builds are especially misleading because they carry:
+
+- the Flutter debug kernel blob
+- large engine/runtime payloads
+- native barcode-scanning libraries and models
+- additional debug-mode asset duplication into `app_flutter`
+
+That makes the storage number useful for local developer awareness, but poor as a product-facing size metric.
+
+### What This Means For Future Size Checks
+
+If contributors want to reason about real user footprint, they should inspect release artifacts and release installs.
+
+The local build comparison during the audit made that clear:
+
+- debug APK: roughly `214.7 MB`
+- release APK: roughly `67.8 MB`
+
+The project should therefore treat release builds as the source of truth for storage and distribution discussions, while treating debug builds as a development convenience with intentionally inflated size characteristics.
+
+### Follow-Up Device Check
+
+A follow-up `adb` pass against the installed release build added one more important detail.
+
+The release package itself was confirmed on-device at roughly `68.3 MB`, which matches the local release artifact much more closely than the earlier debug package.
+
+But the app's credential-encrypted data directory inode remained unchanged across the debug-to-release upgrade. That means the release install preserved the existing app-private data from the previous debug install rather than starting from a clean slate.
+
+This matters because the earlier debug audit had already shown roughly `73 MB` of duplicated Flutter debug assets inside app-private storage. Installing release over debug does not automatically remove those artifacts. So a release-over-debug storage reading can still look artificially large even when the release APK itself is much smaller.
+
+The `adb` follow-up also confirmed a normal non-debuggable release package shape:
+
+- package flags no longer include `DEBUGGABLE`
+- `primaryCpuAbi=arm64-v8a`
+- installed package directory under `/data/app` is about `65 MB`
+- Android created an `oat/arm64/base.odex` path for compiled release code
+
+Because the release app is no longer debuggable, `run-as` cannot inspect the app-private data directory directly. That means package-code size is easy to verify on-device for release builds, while app-private data breakdown requires either:
+
+- a clean measurement before switching away from a debuggable build
+- a rooted device
+- or a fresh release install followed by Android Settings storage inspection
+
+The engineering rule becomes stricter:
+
+- release size checks should use a fresh release install or a cleared app data directory, not merely a release APK installed over an existing debug build
+
+## Device Performance Audit Snapshot: March 11, 2026
+
+After the storage audit, the next question was whether the installed release package was behaving efficiently on a real phone rather than only in source review.
+
+An `adb`-driven device audit on March 11, 2026 focused on:
+
+- cold and warm launch timing
+- release-package footprint on device
+- steady-state process memory
+- obvious background work while the app was idle
+- a basic shell interaction sweep on the live dashboard
+
+### Launch Timing
+
+Using `am start -W` against the installed release build, the observed cold-start times on device were:
+
+- `229 ms`
+- `220 ms`
+- `212 ms`
+
+Warm and hot launches were much shorter and sometimes reported by ActivityManager as `HOT` or `UNKNOWN`, which is normal for re-entry cases where Android is resuming an already created task rather than rebuilding the activity from scratch.
+
+The practical takeaway is that launch performance is already strong enough that startup is not the main performance risk for this app.
+
+### Memory Shape
+
+`dumpsys meminfo` against the active release process showed a total process footprint in this range:
+
+- `TOTAL PSS`: about `168 MB`
+- `TOTAL RSS`: about `252 MB`
+
+The important buckets were:
+
+- `Graphics`: about `61 MB`
+- `Code`: about `52 MB`
+- `Native Heap`: about `23.5 MB`
+- `Java Heap`: about `4.8 MB`
+
+This is a reasonable shape for a Flutter release build with a full-screen SurfaceView and camera/barcode dependencies, but it also confirms that graphics and code dominate the runtime footprint more than app-managed data structures do.
+
+### CPU At Idle
+
+After a short settle window on the dashboard, repeated `top` samples showed:
+
+- `0.0%` CPU for the NeoAlarm process at idle
+
+That is the right result. It means the app is not obviously spinning in the foreground once it has settled.
+
+### Background Work
+
+The battery and alarm inspection did reveal one recurring non-alarm background behavior:
+
+- short `JobInfoSchedulerService` executions from `com.google.android.datatransport.runtime`
+
+These jobs were brief and not large enough to dominate CPU usage, but they do exist. They appear to come from dependency-level infrastructure rather than from the alarm engine itself.
+
+This does not currently look like a serious efficiency failure, but it is worth keeping visible because a local-first alarm app should stay suspicious of any background work it did not explicitly design for.
+
+### Alarm And Service Behavior At Idle
+
+Two positive checks came out of the device audit:
+
+- there was no lingering foreground service while the app was simply sitting on the dashboard
+- `dumpsys alarm` showed the expected exact-alarm scheduling owned by `AlarmReceiver`, rather than a noisy spread of unnecessary background timers
+
+That supports the intended architecture: idle app shell, native scheduling only when needed.
+
+### Rendering Signal Limitations
+
+`dumpsys gfxinfo` was much less useful than the other signals during the dashboard interaction sweep.
+
+Because the app renders through Flutter's surface pipeline, the system-level `gfxinfo` summary produced only a tiny frame sample for the exercised path. That is enough to confirm the command worked, but not enough to treat it as a reliable rendering benchmark.
+
+The engineering implication is clear:
+
+- basic `adb` rendering commands are useful sanity checks
+- real frame-performance benchmarking for this app should use Macrobenchmark and Perfetto if rendering becomes a concern
+
+### What This Audit Means
+
+The release build does not look slow in the obvious ways.
+
+The strongest device-level conclusions from this audit are:
+
+- startup time is already good
+- idle CPU is effectively zero
+- memory is substantial but understandable for a Flutter + camera + ML package
+- the alarm engine is not leaving foreground-service work behind on the dashboard
+- dependency-level background jobs exist and should be watched, but they are currently small
+
+So the next performance work for NeoAlarm should focus less on raw startup speed and more on:
+
+- keeping graphics/memory growth under control as UI complexity increases
+- watching dependency-driven background work
+- using better tooling for rendering benchmarks than `gfxinfo` alone
+
+### Follow-Up Tooling Result
+
+The follow-up implementation turned that recommendation into working project infrastructure.
+
+On March 11, 2026, the connected Samsung `SM-G990U1` completed the new Macrobenchmark cold-start run successfully. The current baseline recorded by the benchmark harness was:
+
+- `timeToInitialDisplayMs`: min `517.3`, median `581.8`, max `646.5`
+- `timeToFullDisplayMs`: min `517.3`, median `581.8`, max `646.5`
+
+The benchmark emitted ten iteration-level Perfetto traces plus structured JSON benchmark data inside the repository build output, and the manual Perfetto script produced a standalone startup trace in the ignored artifacts directory.
+
+That changes the engineering story in an important way: NeoAlarm no longer relies only on source review and improvised shell checks for performance work. It has a repeatable measurement path that contributors can rerun and compare over time.
+
 ## Security Audit Snapshot: March 11, 2026
 
 A source audit of the Android and Flutter codebase on March 11, 2026 found four issues worth recording before wider distribution.
@@ -488,6 +772,8 @@ The initial mitigation pass adopted four concrete policies:
 - Android auto-backup is disabled for MVP so local alarm and mission state does not quietly escape into backup flows
 - the exported reschedule receiver now accepts only the expected system actions and treats failures defensively
 - release signing moved to a local `key.properties` strategy with CI-secret support and a deliberate debug fallback for non-distribution builds
+
+That signing strategy is no longer only theoretical. The repository now has a locally generated release keystore and can produce a real signed `release` APK, while still keeping the signing material out of Git through ignored local files and optional CI secret materialization.
 
 Those changes matter because they reinforce a broader rule: convenience boundaries are not security boundaries. Internal action strings, platform defaults, and development signing shortcuts are acceptable only when they do not weaken the trust model of the product.
 

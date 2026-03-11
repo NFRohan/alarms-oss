@@ -8,6 +8,7 @@ This project treats documentation as part of the engineering surface, not as a c
 - Read [planning/overall-plan.md](planning/overall-plan.md) for the full implementation roadmap.
 - Read [planning/sprint-plan.md](planning/sprint-plan.md) for the execution sequence.
 - Read [testing/test-strategy.md](testing/test-strategy.md) for the quality and CI model.
+- Read [testing/performance-workflow.md](testing/performance-workflow.md) for Macrobenchmark, Perfetto, and dependency-audit usage.
 - Read [architecture/engineering-story.md](architecture/engineering-story.md) to understand why the system is shaped this way.
 - Read [architecture/overview.md](architecture/overview.md) for the high-level technical model.
 - Read [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md) for the authoritative active alarm state machine.
@@ -21,6 +22,7 @@ This project treats documentation as part of the engineering surface, not as a c
 - [architecture/engineering-story.md](architecture/engineering-story.md)
 - [architecture/overview.md](architecture/overview.md)
 - [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md)
+- [testing/performance-workflow.md](testing/performance-workflow.md)
 
 ### I want to see the delivery roadmap
 
@@ -31,6 +33,7 @@ This project treats documentation as part of the engineering surface, not as a c
 ### I want to understand testing and release confidence
 
 - [testing/test-strategy.md](testing/test-strategy.md)
+- [testing/performance-workflow.md](testing/performance-workflow.md)
 - [planning/sprint-plan.md](planning/sprint-plan.md)
 - [adr/0006-security-hardening-and-release-pipeline.md](adr/0006-security-hardening-and-release-pipeline.md)
 - [adr/0009-event-driven-active-session-and-vision-lifecycle.md](adr/0009-event-driven-active-session-and-vision-lifecycle.md)
@@ -78,6 +81,7 @@ This project treats documentation as part of the engineering surface, not as a c
 - `docs/documentation-strategy.md`: what documentation must exist and when it must be updated.
 - `docs/planning/*.md`: roadmap and sprint-level execution planning.
 - `docs/testing/*.md`: quality strategy, CI expectations, and device-testing approach.
+- `docs/testing/performance-workflow.md`: performance benchmarking, Perfetto capture, and dependency-audit workflow.
 - `docs/architecture/*.md`: stable system-level understanding and engineering narrative.
 - `docs/adr/*.md`: irreversible or high-impact decisions with context and tradeoffs.
 - `docs/contributing/*.md`: contributor workflow and engineering expectations.

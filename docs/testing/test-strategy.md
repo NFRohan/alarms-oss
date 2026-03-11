@@ -136,6 +136,10 @@ Cover:
 - activity-recognition revoked during an active steps mission
 - repeated QR permission recovery or app resume not causing scanner churn or camera-session breakage
 - OEM-specific battery optimization problems
+- release-build startup timing via `am start -W`
+- release-build memory shape via `dumpsys meminfo`
+- idle CPU checks via repeated `top` samples after the dashboard settles
+- package and private-data storage checks with `adb` and Android Settings
 
 Target at least:
 
@@ -149,6 +153,12 @@ Direct-boot note:
 
 - after adding `LOCKED_BOOT_COMPLETED` support, manual testing should include at least one alarm configured before reboot, then a restart without first unlocking the device, to confirm that schedules are rebuilt from device-protected storage rather than only after unlock
 - direct-boot testing should also confirm that the Flutter shell does not load the full dashboard before unlock and that no startup-time plugin initialization crashes the app during a pre-unlock launch
+
+Performance note:
+
+- for Flutter rendering work, treat `dumpsys gfxinfo` as a coarse sanity check only
+- when frame pacing, startup regressions, or camera/sensor runtime cost become real concerns, use the repository Macrobenchmark and Perfetto workflow rather than relying on `gfxinfo` summaries alone
+- see [performance-workflow.md](performance-workflow.md) for the exact scripts, outputs, and current baseline
 
 ## Post-Minification Verification
 
@@ -229,6 +239,74 @@ Current release note:
 
 - release builds are now minified and shrink resources
 - release verification is not complete until the minified APK has been installed and smoke-tested on a real device
+- benchmark-only shell profiling is enabled on the dedicated `benchmark` variant, not on the shipped app manifest
+- real distribution artifacts should come from the `android/key.properties` signing path or CI secrets materialized into the same contract
+
+## Performance Automation And Profiling
+
+The repository now has three concrete performance tools:
+
+- `android/benchmark`: Android Macrobenchmark module for cold-start timing on a real device
+- `scripts/android/capture_perfetto.ps1`: manual Perfetto capture workflow
+- `scripts/android/audit_datatransport.ps1`: dependency-audit script for unexpected Android background work
+
+Current benchmark result recorded on March 11, 2026 for the connected Samsung `SM-G990U1`:
+
+- cold start `timeToInitialDisplayMs`: min `517.3`, median `581.8`, max `646.5`
+- cold start `timeToFullDisplayMs`: min `517.3`, median `581.8`, max `646.5`
+
+Benchmark artifacts are written into:
+
+- `build/benchmark/reports/androidTests/connected/benchmark`
+- `build/benchmark/outputs/connected_android_test_additional_output/benchmark/connected/<device>`
+
+Manual Perfetto traces are written into:
+
+- `.artifacts/android-performance`
+
+Important policy note:
+
+- the benchmark target is a dedicated release-like `benchmark` app build type
+- that build type stays debug-signed for local device install
+- it intentionally does not enable minification or resource shrinking
+- the benchmark target alone carries `android:profileable="shell=true"` for shell-driven profiling
+- the real minified `release` APK is still validated separately, because benchmark repeatability and ship-mode shrinker validation are different concerns
+
+## Dependency-Level Background Work
+
+The March 11, 2026 dependency audit confirmed that the observed `com.google.android.datatransport.runtime` jobs on device come from the QR stack:
+
+- `com.google.mlkit:barcode-scanning`
+- `com.google.android.gms:play-services-mlkit-barcode-scanning`
+- `com.google.android.datatransport:transport-runtime`
+- `com.google.android.datatransport:transport-backend-cct`
+
+This is currently an accepted dependency tradeoff, not an unresolved mystery in the alarm engine.
+
+If background-work cost becomes unacceptable later, the likely mitigation paths are:
+
+- replace the QR decoder stack
+- move QR into a separate feature/flavor boundary
+- maintain a reduced core build without ML Kit
+
+## Storage Measurement Guidance
+
+Storage measurements for this project must be taken from release installs, not debug installs.
+
+Why:
+
+- Flutter debug builds ship a much larger runtime payload than release builds
+- the debug app can duplicate Flutter runtime assets into `app_flutter/flutter_assets` inside app-private storage
+- Android settings surfaces often report total installed footprint, which includes code payload, compiled artifacts, and native/runtime assets rather than just user data
+
+During the March 11, 2026 storage audit, the installed debug package and duplicated debug assets accounted for nearly all of the reported footprint, while persisted alarm data remained tiny.
+
+That means:
+
+- use debug installs for development convenience
+- use release installs for realistic end-user storage analysis
+- do not treat "one alarm uses X MB" as a meaningful claim unless the measurement was taken from a release build with known packaging settings
+- do not measure release footprint by simply installing release over an existing debug build, because the app-private data directory is preserved across upgrades and can retain large debug-era Flutter assets
 
 ## Practical Answer For This Repo
 

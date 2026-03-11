@@ -50,6 +50,15 @@ android {
     }
 
     buildTypes {
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+
         release {
             signingConfig =
                 signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
@@ -70,6 +79,7 @@ dependencies {
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 }
 

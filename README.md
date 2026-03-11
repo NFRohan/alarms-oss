@@ -194,6 +194,13 @@ To use a real signing key:
 
 If `android/key.properties` is absent, Gradle falls back to debug signing so CI and local verification builds still work.
 
+Current local release setup:
+
+- the repository now supports a real locally generated release keystore at `android/app/release-keystore.jks`
+- live signing values are kept only in `android/key.properties`, which is ignored by Git
+- a base64 export suitable for GitHub Actions secrets can be generated or stored under `.artifacts/signing`
+- public release artifacts should use the real signing path, not the debug-sign fallback
+
 Optional GitHub Actions secrets for signed release artifacts:
 
 - `ANDROID_SIGNING_KEYSTORE_BASE64`
@@ -230,6 +237,24 @@ NeoAlarm uses a layered test model:
 
 The full test model is documented in [docs/testing/test-strategy.md](docs/testing/test-strategy.md).
 
+## Performance Tooling
+
+The repository includes a real Android performance workflow, not just ad hoc `adb` commands:
+
+- Macrobenchmark module in `android/benchmark`
+- manual Perfetto capture scripts in `scripts/android`
+- dependency audit script for tracing unexpected Android background work back to the Gradle graph
+
+Current notes:
+
+- the benchmark target is a release-like `benchmark` app variant that stays debug-signed for local device installation
+- the benchmark variant intentionally skips minification and resource shrinking because the real minified `release` APK is validated separately, while the synthetic benchmark build type needs to stay stable for repeated measurements
+- `android:profileable="shell=true"` now lives only in the benchmark target manifest, not in the shipped app manifest
+- the shipped app still pins `androidx.profileinstaller`, because profile-guided startup optimization is useful in production and required by the benchmark toolchain
+- the current QR stack pulls in ML Kit, which in turn pulls in `com.google.android.datatransport.runtime`; that background work is tracked and documented rather than ignored
+
+See [docs/testing/performance-workflow.md](docs/testing/performance-workflow.md) for the exact commands, outputs, and current baseline numbers.
+
 ## Repository Map
 
 - [docs/README.md](docs/README.md): documentation index
@@ -237,6 +262,7 @@ The full test model is documented in [docs/testing/test-strategy.md](docs/testin
 - [docs/architecture/engineering-story.md](docs/architecture/engineering-story.md): engineering rationale
 - [docs/architecture/active-session-lifecycle.md](docs/architecture/active-session-lifecycle.md): authoritative alarm session lifecycle
 - [docs/contributing/mission-authoring.md](docs/contributing/mission-authoring.md): how to add missions safely
+- [docs/testing/performance-workflow.md](docs/testing/performance-workflow.md): Macrobenchmark, Perfetto, and dependency-audit workflow
 - [docs/planning/overall-plan.md](docs/planning/overall-plan.md): implementation roadmap
 - [docs/planning/sprint-plan.md](docs/planning/sprint-plan.md): sprint breakdown
 - [docs/adr/README.md](docs/adr/README.md): architecture decision records

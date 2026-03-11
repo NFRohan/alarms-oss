@@ -5,7 +5,7 @@
 The app is intentionally split into two execution domains:
 
 - Flutter: user interface, alarm editing, mission configuration, non-critical state presentation
-- Native Android: exact scheduling, alarm firing, ringing lifecycle, recovery, and camera analysis
+- Native Android: exact scheduling, alarm firing, ringing lifecycle, recovery, camera analysis, and performance-critical session timing
 
 This split exists because alarm correctness cannot depend on the Flutter isolate being alive when the device wakes from Doze or when the app process has been reclaimed.
 
@@ -36,6 +36,7 @@ Security note:
 - lock-screen/full-screen alarm window flags are authorized by persisted active-session state, not by a forgeable incoming activity action
 - exported reschedule entry points are constrained to expected system actions and treated defensively
 - local persistence is device-protected for alarm/session recovery and Android auto-backup is disabled for MVP
+- shell-driven profiling is exposed only through the dedicated `benchmark` target, not through the shipped app manifest
 
 ### Mission Platform
 
@@ -45,7 +46,7 @@ Initial mission types:
 
 - Math, implemented
 - Steps, implemented
-- QR, planned
+- QR, implemented
 
 Current note:
 
@@ -66,6 +67,12 @@ The pipeline is native-first:
 - camera analysis resources are disposed explicitly when the host activity is destroyed
 
 This keeps the QR mission fast today and makes future on-device object detection a swap of analyzer implementation rather than a rebuild of the camera stack.
+
+Dependency note:
+
+- the current QR implementation depends on ML Kit barcode scanning
+- that dependency chain pulls in `com.google.android.datatransport.runtime`
+- the resulting small background job activity is currently accepted and tracked rather than treated as app-authored alarm work
 
 ## Runtime Flows
 
@@ -137,6 +144,7 @@ See [active-session-lifecycle.md](active-session-lifecycle.md) for the full stat
 - Mission implementations must not mutate scheduler behavior directly.
 - Vision missions must depend on analyzer results, not raw cross-platform frame transport.
 - Vision resources must have an explicit lifecycle end instead of relying on process teardown.
+- Performance investigation should prefer Macrobenchmark and Perfetto over ad hoc frame summaries once runtime behavior is in question.
 
 ## Non-Goals For V1
 
