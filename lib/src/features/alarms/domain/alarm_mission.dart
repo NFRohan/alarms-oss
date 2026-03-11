@@ -1,3 +1,13 @@
+const minMathMissionProblemCount = 1;
+const maxMathMissionProblemCount = 5;
+
+int _normalizeMathMissionProblemCount(int? value) {
+  final resolved = value ?? minMathMissionProblemCount;
+  return resolved
+      .clamp(minMathMissionProblemCount, maxMathMissionProblemCount)
+      .toInt();
+}
+
 enum AlarmMissionType {
   none('none', 'Direct dismiss', 'Dismiss button is immediately available.'),
   math('math', 'Math mission', 'Solve a math challenge to dismiss.'),
@@ -44,13 +54,23 @@ class MissionSpec {
   const MissionSpec({
     required this.type,
     this.mathDifficulty = MathMissionDifficulty.standard,
-  });
+    this.mathProblemCount = minMathMissionProblemCount,
+  }) : assert(
+         type != AlarmMissionType.math ||
+             (mathProblemCount >= minMathMissionProblemCount &&
+                 mathProblemCount <= maxMathMissionProblemCount),
+       );
 
   const MissionSpec.none() : this(type: AlarmMissionType.none);
 
   const MissionSpec.math({
     MathMissionDifficulty difficulty = MathMissionDifficulty.standard,
-  }) : this(type: AlarmMissionType.math, mathDifficulty: difficulty);
+    int problemCount = minMathMissionProblemCount,
+  }) : this(
+         type: AlarmMissionType.math,
+         mathDifficulty: difficulty,
+         mathProblemCount: problemCount,
+       );
 
   const MissionSpec.steps() : this(type: AlarmMissionType.steps);
 
@@ -71,6 +91,9 @@ class MissionSpec {
         difficulty: MathMissionDifficulty.fromId(
           config?['difficulty'] as String?,
         ),
+        problemCount: _normalizeMathMissionProblemCount(
+          (config?['problemCount'] as num?)?.toInt(),
+        ),
       ),
       AlarmMissionType.steps => const MissionSpec.steps(),
       AlarmMissionType.qr => const MissionSpec.qr(),
@@ -79,13 +102,15 @@ class MissionSpec {
 
   final AlarmMissionType type;
   final MathMissionDifficulty mathDifficulty;
+  final int mathProblemCount;
 
   bool get isDirectDismiss => type == AlarmMissionType.none;
 
   String get summary {
     return switch (type) {
       AlarmMissionType.none => type.label,
-      AlarmMissionType.math => '${type.label} · ${mathDifficulty.label}',
+      AlarmMissionType.math =>
+        '${type.label} - ${mathDifficulty.label} - $mathProblemCount ${mathProblemCount == 1 ? 'problem' : 'problems'}',
       AlarmMissionType.steps => type.label,
       AlarmMissionType.qr => type.label,
     };
@@ -95,7 +120,10 @@ class MissionSpec {
     return {
       'type': type.id,
       'config': switch (type) {
-        AlarmMissionType.math => {'difficulty': mathDifficulty.id},
+        AlarmMissionType.math => {
+          'difficulty': mathDifficulty.id,
+          'problemCount': mathProblemCount,
+        },
         _ => <String, Object?>{},
       },
     };
@@ -104,12 +132,16 @@ class MissionSpec {
   MissionSpec copyWith({
     AlarmMissionType? type,
     MathMissionDifficulty? mathDifficulty,
+    int? mathProblemCount,
   }) {
     final resolvedType = type ?? this.type;
     return switch (resolvedType) {
       AlarmMissionType.none => const MissionSpec.none(),
       AlarmMissionType.math => MissionSpec.math(
         difficulty: mathDifficulty ?? this.mathDifficulty,
+        problemCount: _normalizeMathMissionProblemCount(
+          mathProblemCount ?? this.mathProblemCount,
+        ),
       ),
       AlarmMissionType.steps => const MissionSpec.steps(),
       AlarmMissionType.qr => const MissionSpec.qr(),
@@ -119,6 +151,7 @@ class MissionSpec {
 
 enum ActiveAlarmSessionState {
   ringing('ringing'),
+  missionActive('mission_active'),
   snoozed('snoozed');
 
   const ActiveAlarmSessionState(this.id);
@@ -145,6 +178,23 @@ enum ActiveMissionStatus {
     return ActiveMissionStatus.values.firstWhere(
       (status) => status.id == value,
       orElse: () => ActiveMissionStatus.pending,
+    );
+  }
+}
+
+enum MathAnswerSubmissionResult {
+  incorrect('incorrect'),
+  advanced('advanced'),
+  completed('completed');
+
+  const MathAnswerSubmissionResult(this.id);
+
+  final String id;
+
+  static MathAnswerSubmissionResult fromId(String? value) {
+    return MathAnswerSubmissionResult.values.firstWhere(
+      (result) => result.id == value,
+      orElse: () => MathAnswerSubmissionResult.incorrect,
     );
   }
 }
@@ -178,16 +228,29 @@ class ActiveMissionSnapshot {
   const ActiveMissionSnapshot({
     required this.spec,
     required this.status,
+    required this.solvedProblemCount,
+    required this.targetProblemCount,
     this.mathChallenge,
   });
 
   factory ActiveMissionSnapshot.fromMap(Map<Object?, Object?>? raw) {
     final missionRaw = raw ?? const <Object?, Object?>{};
+    final config = missionRaw['config'] as Map<Object?, Object?>?;
     final challengeRaw = missionRaw['mathChallenge'] as Map<Object?, Object?>?;
+    final spec = MissionSpec.fromMap(missionRaw);
 
     return ActiveMissionSnapshot(
-      spec: MissionSpec.fromMap(missionRaw),
+      spec: spec,
       status: ActiveMissionStatus.fromId(missionRaw['status'] as String?),
+      solvedProblemCount:
+          (missionRaw['solvedProblemCount'] as num?)?.toInt() ?? 0,
+      targetProblemCount:
+          (missionRaw['targetProblemCount'] as num?)?.toInt() ??
+          (spec.type == AlarmMissionType.math
+              ? _normalizeMathMissionProblemCount(
+                  (config?['problemCount'] as num?)?.toInt(),
+                )
+              : 0),
       mathChallenge: challengeRaw == null
           ? null
           : MathChallengeSnapshot.fromMap(challengeRaw),
@@ -196,7 +259,15 @@ class ActiveMissionSnapshot {
 
   final MissionSpec spec;
   final ActiveMissionStatus status;
+  final int solvedProblemCount;
+  final int targetProblemCount;
   final MathChallengeSnapshot? mathChallenge;
 
   bool get isCompleted => status == ActiveMissionStatus.completed;
+
+  bool get hasMultipleProblems => targetProblemCount > 1;
+
+  int get currentProblemNumber => (solvedProblemCount + 1)
+      .clamp(minMathMissionProblemCount, targetProblemCount)
+      .toInt();
 }

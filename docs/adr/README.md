@@ -40,3 +40,4 @@ Recommended sections:
 - [0001-flutter-ui-native-android-core.md](0001-flutter-ui-native-android-core.md)
 - [0002-native-vision-mission-pipeline.md](0002-native-vision-mission-pipeline.md)
 - [0003-exact-alarm-permission-strategy.md](0003-exact-alarm-permission-strategy.md)
+- [0004-mission-confirmation-and-inactivity-retrigger.md](0004-mission-confirmation-and-inactivity-retrigger.md)

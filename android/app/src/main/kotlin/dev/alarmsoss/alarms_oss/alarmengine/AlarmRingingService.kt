@@ -62,6 +62,16 @@ class AlarmRingingService : Service() {
                 START_NOT_STICKY
             }
 
+            ACTION_BEGIN_MISSION -> {
+                beginMission()
+                START_NOT_STICKY
+            }
+
+            ACTION_REGISTER_MISSION_ACTIVITY -> {
+                registerMissionActivity()
+                START_NOT_STICKY
+            }
+
             else -> {
                 restoreIfNeeded()
                 if (currentSession == null) START_NOT_STICKY else START_STICKY
@@ -83,6 +93,7 @@ class AlarmRingingService : Service() {
         }
 
         cancelSnooze(alarmId)
+        cancelMissionTimeout(alarmId)
 
         val session = ringSessionStore.get()
             ?.takeIf { it.alarmId == alarmId }
@@ -109,10 +120,12 @@ class AlarmRingingService : Service() {
     }
 
     private fun dismissActiveAlarm(clearSession: Boolean = true) {
+        val activeAlarmId = currentSession?.alarmId ?: ringSessionStore.get()?.alarmId
         stopFeedback()
         wakeLock?.takeIf { it.isHeld }?.release()
         wakeLock = null
-        currentSession?.alarmId?.let(::cancelSnooze)
+        activeAlarmId?.let(::cancelSnooze)
+        activeAlarmId?.let(::cancelMissionTimeout)
         currentSession = null
         if (clearSession) {
             ringSessionStore.clear()
@@ -122,7 +135,7 @@ class AlarmRingingService : Service() {
     }
 
     private fun snoozeActiveAlarm() {
-        val session = currentSession ?: ringSessionStore.get()?.takeIf(AlarmRingSession::isRinging) ?: run {
+        val session = currentSession ?: ringSessionStore.get()?.takeIf(AlarmRingSession::isActive) ?: run {
             stopSelf()
             return
         }
@@ -135,11 +148,43 @@ class AlarmRingingService : Service() {
         val updatedSession = session.snoozedUntil(triggerAt)
         ringSessionStore.put(updatedSession)
         scheduleSnooze(updatedSession)
+        cancelMissionTimeout(session.alarmId)
         stopFeedback()
         wakeLock?.takeIf { it.isHeld }?.release()
         wakeLock = null
         currentSession = null
         stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun beginMission() {
+        val session = currentSession ?: ringSessionStore.get()?.takeIf(AlarmRingSession::isActive) ?: run {
+            stopSelf()
+            return
+        }
+
+        if (session.mission.spec.type == MissionSpec.TYPE_NONE) {
+            return
+        }
+
+        val updatedSession = session.activateMission()
+        ringSessionStore.put(updatedSession)
+        currentSession = updatedSession
+        scheduleMissionTimeout(updatedSession)
+        stopFeedback()
+        wakeLock?.takeIf { it.isHeld }?.release()
+        wakeLock = null
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun registerMissionActivity() {
+        val session = ringSessionStore.get()?.takeIf(AlarmRingSession::isMissionActive) ?: run {
+            stopSelf()
+            return
+        }
+
+        scheduleMissionTimeout(session)
         stopSelf()
     }
 
@@ -232,7 +277,8 @@ class AlarmRingingService : Service() {
             .setContentTitle(session.alarmLabel)
             .setContentText(
                 if (session.mission.spec.type == MissionSpec.TYPE_MATH) {
-                    "Solve the math mission to dismiss"
+                    val count = MissionSpec.normalizeMathProblemCount(session.mission.spec.mathProblemCount)
+                    "Solve $count math ${if (count == 1) "problem" else "problems"} to dismiss"
                 } else {
                     "Alarm is ringing"
                 },
@@ -272,11 +318,15 @@ class AlarmRingingService : Service() {
         private const val CHANNEL_ID = "active_alarm"
         private const val NOTIFICATION_ID = 42001
         private const val EXTRA_ALARM_ID = "alarm_id"
+        private const val MISSION_INACTIVITY_TIMEOUT_MS = 30_000L
         private const val WAKE_LOCK_TIMEOUT_MS = 30 * 60 * 1000L
         const val ACTION_SHOW_ACTIVE_ALARM = "dev.alarmsoss.alarms_oss.SHOW_ACTIVE_ALARM"
         private const val ACTION_START = "dev.alarmsoss.alarms_oss.START_ACTIVE_ALARM"
         private const val ACTION_DISMISS = "dev.alarmsoss.alarms_oss.DISMISS_ACTIVE_ALARM"
         private const val ACTION_SNOOZE = "dev.alarmsoss.alarms_oss.SNOOZE_ACTIVE_ALARM"
+        private const val ACTION_BEGIN_MISSION = "dev.alarmsoss.alarms_oss.BEGIN_MISSION"
+        private const val ACTION_REGISTER_MISSION_ACTIVITY =
+            "dev.alarmsoss.alarms_oss.REGISTER_MISSION_ACTIVITY"
 
         fun start(context: Context, alarmId: String) {
             ContextCompat.startForegroundService(
@@ -303,6 +353,22 @@ class AlarmRingingService : Service() {
                 },
             )
         }
+
+        fun beginMission(context: Context) {
+            context.startService(
+                Intent(context, AlarmRingingService::class.java).apply {
+                    action = ACTION_BEGIN_MISSION
+                },
+            )
+        }
+
+        fun registerMissionActivity(context: Context) {
+            context.startService(
+                Intent(context, AlarmRingingService::class.java).apply {
+                    action = ACTION_REGISTER_MISSION_ACTIVITY
+                },
+            )
+        }
     }
 
     private fun scheduleSnooze(session: AlarmRingSession) {
@@ -318,6 +384,18 @@ class AlarmRingingService : Service() {
         alarmManager.cancel(buildSnoozeOperation(alarmId))
     }
 
+    private fun scheduleMissionTimeout(session: AlarmRingSession) {
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            System.currentTimeMillis() + MISSION_INACTIVITY_TIMEOUT_MS,
+            buildMissionTimeoutOperation(session.alarmId),
+        )
+    }
+
+    private fun cancelMissionTimeout(alarmId: String) {
+        alarmManager.cancel(buildMissionTimeoutOperation(alarmId))
+    }
+
     private fun buildSnoozeOperation(alarmId: String): PendingIntent {
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
@@ -327,6 +405,20 @@ class AlarmRingingService : Service() {
         return PendingIntent.getBroadcast(
             this,
             "$alarmId:snooze".hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun buildMissionTimeoutOperation(alarmId: String): PendingIntent {
+        val intent = Intent(this, AlarmReceiver::class.java).apply {
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_IS_MISSION_TIMEOUT, true)
+        }
+
+        return PendingIntent.getBroadcast(
+            this,
+            "$alarmId:mission_timeout".hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

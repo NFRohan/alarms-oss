@@ -3,9 +3,15 @@ import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:flutter/widgets.dart';
 
 class MissionActionCallbacks {
-  const MissionActionCallbacks({required this.submitMathAnswer});
+  const MissionActionCallbacks({
+    required this.registerActivity,
+    required this.submitMathAnswer,
+  });
 
-  final Future<bool> Function(String answer) submitMathAnswer;
+  final Future<void> Function() registerActivity;
+
+  final Future<MathAnswerSubmissionResult> Function(String answer)
+      submitMathAnswer;
 }
 
 abstract class MissionDriver {

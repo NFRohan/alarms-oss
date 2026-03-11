@@ -5,12 +5,16 @@ import org.json.JSONObject
 data class MissionSpec(
     val type: String,
     val mathDifficultyId: String? = null,
+    val mathProblemCount: Int? = null,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return mapOf(
             "type" to type,
             "config" to when (type) {
-                TYPE_MATH -> mapOf("difficulty" to (mathDifficultyId ?: DEFAULT_MATH_DIFFICULTY))
+                TYPE_MATH -> mapOf(
+                    "difficulty" to (mathDifficultyId ?: DEFAULT_MATH_DIFFICULTY),
+                    "problemCount" to normalizeMathProblemCount(mathProblemCount),
+                )
                 else -> emptyMap<String, Any?>()
             },
         )
@@ -24,6 +28,7 @@ data class MissionSpec(
                 JSONObject().apply {
                     if (type == TYPE_MATH) {
                         put("difficulty", mathDifficultyId ?: DEFAULT_MATH_DIFFICULTY)
+                        put("problemCount", normalizeMathProblemCount(mathProblemCount))
                     }
                 },
             )
@@ -36,6 +41,9 @@ data class MissionSpec(
         const val TYPE_STEPS = "steps"
         const val TYPE_QR = "qr"
         const val DEFAULT_MATH_DIFFICULTY = "standard"
+        const val DEFAULT_MATH_PROBLEM_COUNT = 1
+        const val MIN_MATH_PROBLEM_COUNT = 1
+        const val MAX_MATH_PROBLEM_COUNT = 5
 
         fun fromChannelMap(raw: Map<*, *>?, fallbackType: String? = null): MissionSpec {
             val type = (raw?.get("type") as? String) ?: fallbackType ?: TYPE_NONE
@@ -45,6 +53,10 @@ data class MissionSpec(
                 type = type,
                 mathDifficultyId = when (type) {
                     TYPE_MATH -> (config?.get("difficulty") as? String) ?: DEFAULT_MATH_DIFFICULTY
+                    else -> null
+                },
+                mathProblemCount = when (type) {
+                    TYPE_MATH -> normalizeMathProblemCount((config?.get("problemCount") as? Number)?.toInt())
                     else -> null
                 },
             )
@@ -61,7 +73,22 @@ data class MissionSpec(
                         ?: DEFAULT_MATH_DIFFICULTY
                     else -> null
                 },
+                mathProblemCount = when (type) {
+                    TYPE_MATH -> normalizeMathProblemCount(
+                        if (config?.has("problemCount") == true) {
+                            config.optInt("problemCount", DEFAULT_MATH_PROBLEM_COUNT)
+                        } else {
+                            null
+                        },
+                    )
+                    else -> null
+                },
             )
+        }
+
+        fun normalizeMathProblemCount(value: Int?): Int {
+            return (value ?: DEFAULT_MATH_PROBLEM_COUNT)
+                .coerceIn(MIN_MATH_PROBLEM_COUNT, MAX_MATH_PROBLEM_COUNT)
         }
     }
 }

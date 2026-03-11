@@ -1,6 +1,7 @@
 import 'package:alarms_oss/src/features/alarms/application/alarm_list_controller.dart';
 import 'package:alarms_oss/src/features/alarms/data/alarm_repository.dart';
 import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final activeAlarmSessionProvider = FutureProvider<ActiveAlarmSession?>(
@@ -31,11 +32,20 @@ class ActiveAlarmSessionController {
     _ref.invalidate(alarmListControllerProvider);
   }
 
-  Future<bool> submitMathAnswer(String answer) async {
-    final accepted = await _repository.submitMathAnswer(answer);
+  Future<void> startMission() async {
+    await _repository.startMission();
+    _ref.invalidate(activeAlarmSessionProvider);
+  }
+
+  Future<void> registerMissionActivity() {
+    return _repository.registerMissionActivity();
+  }
+
+  Future<MathAnswerSubmissionResult> submitMathAnswer(String answer) async {
+    final result = await _repository.submitMathAnswer(answer);
     _ref.invalidate(activeAlarmSessionProvider);
     _ref.invalidate(alarmListControllerProvider);
-    return accepted;
+    return result;
   }
 
   void refresh() {

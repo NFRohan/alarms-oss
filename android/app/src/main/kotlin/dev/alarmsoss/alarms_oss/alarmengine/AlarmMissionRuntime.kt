@@ -3,6 +3,12 @@ package dev.alarmsoss.alarms_oss.alarmengine
 import kotlin.random.Random
 import org.json.JSONObject
 
+enum class MathAnswerSubmissionResult(val id: String) {
+    INCORRECT("incorrect"),
+    ADVANCED("advanced"),
+    COMPLETED("completed"),
+}
+
 data class MathChallengeState(
     val leftOperand: Int,
     val rightOperand: Int,
@@ -110,7 +116,7 @@ data class MathChallengeState(
                     MathChallengeState(
                         leftOperand = left,
                         rightOperand = right,
-                        operatorSymbol = "×",
+                        operatorSymbol = "x",
                         correctAnswer = left * right,
                         attemptCount = 0,
                     )
@@ -126,7 +132,7 @@ data class MathChallengeState(
                     MathChallengeState(
                         leftOperand = left,
                         rightOperand = right,
-                        operatorSymbol = "×",
+                        operatorSymbol = "x",
                         correctAnswer = left * right,
                         attemptCount = 0,
                     )
@@ -151,12 +157,16 @@ data class MathChallengeState(
 data class AlarmMissionRuntime(
     val spec: MissionSpec,
     val status: String,
+    val solvedProblemCount: Int,
+    val targetProblemCount: Int,
     val mathChallenge: MathChallengeState?,
 ) {
     fun toChannelMap(): Map<String, Any?> {
         return buildMap {
             putAll(spec.toChannelMap())
             put("status", status)
+            put("solvedProblemCount", solvedProblemCount)
+            put("targetProblemCount", targetProblemCount)
             put("mathChallenge", mathChallenge?.toChannelMap())
         }
     }
@@ -164,6 +174,8 @@ data class AlarmMissionRuntime(
     fun toJson(): JSONObject {
         return spec.toJson().apply {
             put("status", status)
+            put("solvedProblemCount", solvedProblemCount)
+            put("targetProblemCount", targetProblemCount)
             put("mathChallenge", mathChallenge?.toJson())
         }
     }
@@ -171,18 +183,33 @@ data class AlarmMissionRuntime(
     val isDismissAllowed: Boolean
         get() = spec.type == MissionSpec.TYPE_NONE || status == STATUS_COMPLETED
 
-    fun submitMathAnswer(answerRaw: String): Pair<AlarmMissionRuntime, Boolean> {
+    fun submitMathAnswer(answerRaw: String): Pair<AlarmMissionRuntime, MathAnswerSubmissionResult> {
         if (spec.type != MissionSpec.TYPE_MATH) {
-            return copy(status = STATUS_COMPLETED) to true
+            return copy(status = STATUS_COMPLETED) to MathAnswerSubmissionResult.COMPLETED
         }
 
-        val challenge = mathChallenge ?: return this to false
+        val challenge = mathChallenge ?: return this to MathAnswerSubmissionResult.INCORRECT
         val answer = answerRaw.trim().toIntOrNull()
-        if (answer != null && answer == challenge.correctAnswer) {
-            return copy(status = STATUS_COMPLETED) to true
+        if (answer == null || answer != challenge.correctAnswer) {
+            return copy(mathChallenge = challenge.withAttemptIncremented()) to
+                MathAnswerSubmissionResult.INCORRECT
         }
 
-        return copy(mathChallenge = challenge.withAttemptIncremented()) to false
+        val nextSolvedProblemCount = (solvedProblemCount + 1).coerceAtMost(targetProblemCount)
+        if (nextSolvedProblemCount >= targetProblemCount) {
+            return copy(
+                status = STATUS_COMPLETED,
+                solvedProblemCount = targetProblemCount,
+                mathChallenge = null,
+            ) to MathAnswerSubmissionResult.COMPLETED
+        }
+
+        return copy(
+            solvedProblemCount = nextSolvedProblemCount,
+            mathChallenge = MathChallengeState.generate(
+                spec.mathDifficultyId ?: MissionSpec.DEFAULT_MATH_DIFFICULTY,
+            ),
+        ) to MathAnswerSubmissionResult.ADVANCED
     }
 
     companion object {
@@ -194,30 +221,57 @@ data class AlarmMissionRuntime(
                 MissionSpec.TYPE_NONE -> AlarmMissionRuntime(
                     spec = spec,
                     status = STATUS_COMPLETED,
+                    solvedProblemCount = 0,
+                    targetProblemCount = 0,
                     mathChallenge = null,
                 )
 
-                MissionSpec.TYPE_MATH -> AlarmMissionRuntime(
-                    spec = spec,
-                    status = STATUS_PENDING,
-                    mathChallenge = MathChallengeState.generate(
-                        spec.mathDifficultyId ?: MissionSpec.DEFAULT_MATH_DIFFICULTY,
-                    ),
-                )
+                MissionSpec.TYPE_MATH -> {
+                    val targetProblemCount =
+                        MissionSpec.normalizeMathProblemCount(spec.mathProblemCount)
+                    AlarmMissionRuntime(
+                        spec = spec,
+                        status = STATUS_PENDING,
+                        solvedProblemCount = 0,
+                        targetProblemCount = targetProblemCount,
+                        mathChallenge = MathChallengeState.generate(
+                            spec.mathDifficultyId ?: MissionSpec.DEFAULT_MATH_DIFFICULTY,
+                        ),
+                    )
+                }
 
                 else -> AlarmMissionRuntime(
                     spec = spec,
                     status = STATUS_PENDING,
+                    solvedProblemCount = 0,
+                    targetProblemCount = 0,
                     mathChallenge = null,
                 )
             }
         }
 
         fun fromJson(json: JSONObject): AlarmMissionRuntime {
+            val spec = MissionSpec.fromJson(json)
             val challengeJson = json.optJSONObject("mathChallenge")
+            val targetProblemCount = when (spec.type) {
+                MissionSpec.TYPE_MATH -> MissionSpec.normalizeMathProblemCount(
+                    if (json.has("targetProblemCount")) {
+                        json.optInt(
+                            "targetProblemCount",
+                            MissionSpec.normalizeMathProblemCount(spec.mathProblemCount),
+                        )
+                    } else {
+                        spec.mathProblemCount
+                    },
+                )
+                else -> 0
+            }
+
             return AlarmMissionRuntime(
-                spec = MissionSpec.fromJson(json),
+                spec = spec,
                 status = json.optString("status", STATUS_PENDING),
+                solvedProblemCount = json.optInt("solvedProblemCount", 0),
+                targetProblemCount = targetProblemCount,
                 mathChallenge = challengeJson?.let(MathChallengeState::fromJson),
             )
         }

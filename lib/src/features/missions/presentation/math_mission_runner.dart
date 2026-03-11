@@ -19,6 +19,7 @@ class MathMissionDriver implements MissionDriver {
   }) {
     return MathMissionRunner(
       session: session,
+      registerActivity: actions.registerActivity,
       submitMathAnswer: actions.submitMathAnswer,
     );
   }
@@ -27,12 +28,15 @@ class MathMissionDriver implements MissionDriver {
 class MathMissionRunner extends StatefulWidget {
   const MathMissionRunner({
     required this.session,
+    required this.registerActivity,
     required this.submitMathAnswer,
     super.key,
   });
 
   final ActiveAlarmSession session;
-  final Future<bool> Function(String answer) submitMathAnswer;
+  final Future<void> Function() registerActivity;
+  final Future<MathAnswerSubmissionResult> Function(String answer)
+      submitMathAnswer;
 
   @override
   State<MathMissionRunner> createState() => _MathMissionRunnerState();
@@ -40,7 +44,7 @@ class MathMissionRunner extends StatefulWidget {
 
 class _MathMissionRunnerState extends State<MathMissionRunner> {
   late final TextEditingController _answerController;
-  String? _errorText;
+  String? _feedbackText;
   bool _submitting = false;
 
   @override
@@ -60,8 +64,15 @@ class _MathMissionRunnerState extends State<MathMissionRunner> {
     super.didUpdateWidget(oldWidget);
     if (widget.session.sessionId != oldWidget.session.sessionId) {
       _answerController.clear();
-      _errorText = null;
+      _feedbackText = null;
       _submitting = false;
+      return;
+    }
+
+    final previousPrompt = oldWidget.session.mission.mathChallenge?.prompt;
+    final currentPrompt = widget.session.mission.mathChallenge?.prompt;
+    if (previousPrompt != currentPrompt) {
+      _answerController.clear();
     }
   }
 
@@ -87,11 +98,25 @@ class _MathMissionRunnerState extends State<MathMissionRunner> {
         children: [
           NeoPanel(
             color: NeoColors.primary,
-            child: Center(
-              child: Text(
-                challenge.prompt,
-                style: theme.textTheme.displayMedium?.copyWith(fontSize: 52),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.session.mission.hasMultipleProblems) ...[
+                  Text(
+                    'Problem ${widget.session.mission.currentProblemNumber} of ${widget.session.mission.targetProblemCount}',
+                    style: theme.textTheme.labelMedium,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                Center(
+                  child: Text(
+                    challenge.prompt,
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      fontSize: 52,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 14),
@@ -99,14 +124,22 @@ class _MathMissionRunnerState extends State<MathMissionRunner> {
             controller: _answerController,
             keyboardType: const TextInputType.numberWithOptions(signed: true),
             decoration: const InputDecoration(hintText: 'Type the answer'),
+            onChanged: (_) {
+              widget.registerActivity();
+            },
+            onTap: () {
+              widget.registerActivity();
+            },
             onSubmitted: (_) => _submit(),
           ),
-          if (_errorText != null) ...[
+          if (_feedbackText != null) ...[
             const SizedBox(height: 10),
             Text(
-              _errorText!,
+              _feedbackText!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: NeoColors.orange,
+                color: _feedbackText!.startsWith('Wrong')
+                    ? NeoColors.orange
+                    : NeoColors.ink,
               ),
             ),
           ],
@@ -129,25 +162,33 @@ class _MathMissionRunnerState extends State<MathMissionRunner> {
 
     setState(() {
       _submitting = true;
-      _errorText = null;
+      _feedbackText = null;
     });
 
-    final accepted = await widget.submitMathAnswer(_answerController.text);
+    await widget.registerActivity();
+    final result = await widget.submitMathAnswer(_answerController.text);
     if (!mounted) {
       return;
     }
 
-    if (accepted) {
-      setState(() {
-        _submitting = false;
-      });
-      return;
+    final feedbackText = switch (result) {
+      MathAnswerSubmissionResult.completed => null,
+      MathAnswerSubmissionResult.advanced => () {
+        final solvedCount = widget.session.mission.solvedProblemCount + 1;
+        final remainingCount =
+            widget.session.mission.targetProblemCount - solvedCount;
+        return remainingCount > 0 ? 'Correct. $remainingCount left.' : null;
+      }(),
+      MathAnswerSubmissionResult.incorrect => 'Wrong answer. Try again.',
+    };
+
+    if (result != MathAnswerSubmissionResult.completed) {
+      _answerController.clear();
     }
 
-    _answerController.clear();
     setState(() {
       _submitting = false;
-      _errorText = 'Wrong answer. Try again.';
+      _feedbackText = feedbackText;
     });
   }
 }

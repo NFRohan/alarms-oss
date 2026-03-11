@@ -10,6 +10,7 @@ This project treats documentation as part of the engineering surface, not as a c
 - Read [testing/test-strategy.md](testing/test-strategy.md) for the quality and CI model.
 - Read [architecture/engineering-story.md](architecture/engineering-story.md) to understand why the system is shaped this way.
 - Read [architecture/overview.md](architecture/overview.md) for the high-level technical model.
+- Read [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md) for the authoritative active alarm state machine.
 - Read [contributing/engineering-standards.md](contributing/engineering-standards.md) before making architecture or behavior changes.
 
 ## By Audience
@@ -19,11 +20,13 @@ This project treats documentation as part of the engineering surface, not as a c
 - [planning/overall-plan.md](planning/overall-plan.md)
 - [architecture/engineering-story.md](architecture/engineering-story.md)
 - [architecture/overview.md](architecture/overview.md)
+- [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md)
 
 ### I want to see the delivery roadmap
 
 - [planning/overall-plan.md](planning/overall-plan.md)
 - [planning/sprint-plan.md](planning/sprint-plan.md)
+- [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md)
 
 ### I want to understand testing and release confidence
 
@@ -34,6 +37,8 @@ This project treats documentation as part of the engineering surface, not as a c
 
 - [architecture/overview.md](architecture/overview.md)
 - [adr/0001-flutter-ui-native-android-core.md](adr/0001-flutter-ui-native-android-core.md)
+- [architecture/active-session-lifecycle.md](architecture/active-session-lifecycle.md)
+- [adr/0004-mission-confirmation-and-inactivity-retrigger.md](adr/0004-mission-confirmation-and-inactivity-retrigger.md)
 
 ### I want to work on QR or future vision missions
 
@@ -48,6 +53,7 @@ This project treats documentation as part of the engineering surface, not as a c
 ### I want to contribute safely
 
 - [contributing/engineering-standards.md](contributing/engineering-standards.md)
+- [contributing/mission-authoring.md](contributing/mission-authoring.md)
 
 ## Documentation Layers
 

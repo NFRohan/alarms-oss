@@ -1,4 +1,5 @@
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
 import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
 
@@ -24,7 +25,11 @@ abstract class AlarmRepository {
 
   Future<void> snoozeActiveAlarmSession();
 
-  Future<bool> submitMathAnswer(String answer);
+  Future<void> startMission();
+
+  Future<void> registerMissionActivity();
+
+  Future<MathAnswerSubmissionResult> submitMathAnswer(String answer);
 
   Future<void> requestBatteryOptimizationExemption();
 

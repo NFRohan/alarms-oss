@@ -30,6 +30,8 @@ The first release should optimize for:
 - Full-screen alarm launch over the lock screen
 - Configurable snooze duration and maximum snooze count
 - Mission-enforced dismissal with `Math`, `Steps`, and `QR`
+- Mission confirmation flow that silences the alarm only after explicit mission start
+- Native inactivity re-trigger while a mission is active
 - Local storage for alarms, sessions, and mission configuration
 - Recovery into the active mission screen after process death or forced app relaunch
 - Permissions and device-health diagnostics for exact alarms, notifications, camera, sensors, and battery optimization status
@@ -75,7 +77,9 @@ Prioritize practical reliability features before novelty features:
 - Define a stable mission contract and mission registry
 - Implement mission state tracking as part of the active ring session
 - Add the `Math` mission first to prove the contract
+- Make math configurable enough to prove mission-specific runtime state, not just one-shot completion
 - Enforce snooze limits through native session logic
+- Define how long-running missions stay enforceable without continuous audio
 
 ### Phase 5: Sensor And Vision Missions
 
@@ -109,7 +113,7 @@ Prioritize practical reliability features before novelty features:
 
 - `AlarmSpec`: alarm identity, label, time, timezone, repeat rule, enabled flag, ringtone, volume policy, snooze policy, mission spec
 - `MissionSpec`: mission type plus mission-specific configuration
-- `RingSession`: active alarm session state, snooze count, start time, and mission progress
+- `RingSession`: active alarm session state machine, snooze count, start time, mission progress, and mission inactivity enforcement
 - `AlarmEngineApi`: bridge contract for alarm CRUD, scheduling actions, active session queries, and diagnostics
 - `MissionDriver`: extension contract for editor UI, runner UI, validation, and completion reporting
 - `VisionMissionDriver` and `VisionAnalyzer`: native camera mission contracts for QR now and object recognition later
@@ -134,6 +138,7 @@ The MVP is complete when:
 - ringing starts without requiring Flutter to be alive first
 - a full-screen alarm experience launches from the lock screen
 - snooze limits are enforced consistently
+- a mission can move from ringing to silent solving without losing enforcement
 - `Math`, `Steps`, and `QR` can each gate dismissal
 - active missions recover correctly after app process death
 - contributors can identify the alarm engine, mission platform, and vision pipeline boundaries from docs alone

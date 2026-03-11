@@ -57,7 +57,7 @@ class AlarmEngineMethodCallHandler(
                         .map(AlarmRecord::toChannelMap),
                 )
 
-                "getActiveSession" -> result.success(activeRingingSession()?.toChannelMap())
+                "getActiveSession" -> result.success(activeSession()?.toChannelMap())
 
                 "upsertAlarm" -> {
                     val raw = call.arguments as? Map<*, *>
@@ -91,7 +91,7 @@ class AlarmEngineMethodCallHandler(
                 }
 
                 "dismissActiveSession" -> {
-                    val session = activeRingingSession()
+                    val session = activeSession()
                     if (session != null && !session.mission.isDismissAllowed) {
                         throw IllegalStateException("Complete the active mission before dismissing this alarm.")
                     }
@@ -100,8 +100,8 @@ class AlarmEngineMethodCallHandler(
                 }
 
                 "snoozeActiveSession" -> {
-                    val session = activeRingingSession()
-                        ?: throw IllegalStateException("No active ringing session to snooze.")
+                    val session = activeSession()
+                        ?: throw IllegalStateException("No active session to snooze.")
                     if (!session.canSnooze) {
                         throw IllegalStateException("Snooze limit reached for this alarm.")
                     }
@@ -109,23 +109,48 @@ class AlarmEngineMethodCallHandler(
                     result.success(null)
                 }
 
+                "startMission" -> {
+                    val session = activeSession()
+                        ?: throw IllegalStateException("No active mission session.")
+                    if (session.mission.spec.type == MissionSpec.TYPE_NONE) {
+                        throw IllegalStateException("This alarm does not require a mission.")
+                    }
+                    AlarmRingingService.beginMission(appContext)
+                    result.success(null)
+                }
+
+                "registerMissionActivity" -> {
+                    val session = activeSession()
+                        ?: throw IllegalStateException("No active mission session.")
+                    if (session.isMissionActive) {
+                        AlarmRingingService.registerMissionActivity(appContext)
+                    }
+                    result.success(null)
+                }
+
                 "submitMathAnswer" -> {
                     val raw = call.arguments as? Map<*, *>
                         ?: throw IllegalArgumentException("Math answer payload missing.")
-                    val session = activeRingingSession()
+                    val session = activeSession()
                         ?: throw IllegalStateException("No active ringing session.")
                     val answer = raw["answer"] as? String
                         ?: throw IllegalArgumentException("Math answer missing.")
-                    val (updatedMission, accepted) = session.mission.submitMathAnswer(answer)
+                    val (updatedMission, submissionResult) = session.mission.submitMathAnswer(answer)
 
-                    if (accepted) {
-                        ringSessionStore.clear()
-                        AlarmRingingService.dismiss(appContext)
-                    } else {
-                        ringSessionStore.put(session.withMission(updatedMission))
+                    when (submissionResult) {
+                        MathAnswerSubmissionResult.COMPLETED -> {
+                            AlarmRingingService.dismiss(appContext)
+                        }
+
+                        MathAnswerSubmissionResult.ADVANCED,
+                        MathAnswerSubmissionResult.INCORRECT,
+                        -> {
+                            ringSessionStore.put(session.withMission(updatedMission))
+                            AlarmRingingService.registerMissionActivity(appContext)
+                        }
                     }
 
-                    result.success(accepted)
+                    result.success(submissionResult.id)
                 }
 
                 "requestExactAlarmPermission" -> {
@@ -219,8 +244,8 @@ class AlarmEngineMethodCallHandler(
         return sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
     }
 
-    private fun activeRingingSession(): AlarmRingSession? {
-        return ringSessionStore.get()?.takeIf(AlarmRingSession::isRinging)
+    private fun activeSession(): AlarmRingSession? {
+        return ringSessionStore.get()?.takeIf(AlarmRingSession::isActive)
     }
 
     private fun isActivityRecognitionGranted(): Boolean {

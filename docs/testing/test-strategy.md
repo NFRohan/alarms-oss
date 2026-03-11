@@ -55,6 +55,7 @@ Cover:
 - timezone and DST behavior
 - snooze cap logic
 - mission configuration validation
+- mission problem-count validation
 - alarm serialization and persistence mapping
 - analyzer result mapping for vision missions
 
@@ -70,6 +71,7 @@ Cover:
 - create, update, enable, disable, and delete alarm flows
 - active `RingSession` query and recovery handoff
 - mission state transitions that cross the Flutter/native boundary
+- mission activity signaling and inactivity re-trigger contract
 
 These tests should prove that the app shell and the native core agree on state shape and lifecycle.
 
@@ -82,7 +84,8 @@ Cover:
 - app boot and basic navigation
 - creating an alarm and confirming the schedule path succeeds
 - foreground ringing service startup
-- math mission flow
+- math mission flow including multi-problem completion
+- mission confirmation flow and 30-second inactivity re-trigger
 - QR mission permission flow
 
 Use emulator tests for confidence, not for final reliability claims. Emulator behavior is useful, but it does not fully represent Doze, OEM battery policies, or lock-screen quirks on real devices.
@@ -98,6 +101,7 @@ Cover:
 - camera-based QR mission path
 - step mission on supported device types
 - recovery after process death where automation is practical
+- mission-active recovery and idle re-trigger behavior where automation is practical
 
 Use this layer to catch issues that emulators miss, but do not assume cloud devices replace the entire manual matrix.
 
@@ -113,6 +117,9 @@ Cover:
 - overlapping alarms
 - full-screen launch from lock screen
 - app swipe-away and process reclaim during ringing
+- mission confirmation behavior
+- mission-active silence while interacting
+- re-trigger after 30 seconds of no mission activity
 - OEM-specific battery optimization problems
 
 Target at least:

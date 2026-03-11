@@ -100,11 +100,13 @@ Prove the mission architecture with one fully working mission and native snooze 
 - persist mission state as part of `RingSession`
 - implement configurable snooze duration and snooze cap
 - enforce mission completion when the snooze cap is reached
-- build the `Math` mission with configurable difficulty
+- build the `Math` mission with configurable difficulty and problem count
+- add the mission confirmation entry flow and native inactivity re-trigger behavior
 
 ### Done Criteria
 
 - a configured math alarm can only be dismissed by completing the math mission
+- mission-backed alarms can silence only after explicit mission start and re-trigger after inactivity
 - snooze cap behavior is reliable and test-covered
 - mission-specific code does not reach into scheduler internals
 

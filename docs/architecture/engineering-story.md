@@ -20,6 +20,42 @@ An alarm app has to survive:
 
 For those reasons, the app uses Flutter as the shell and native Android as the execution core.
 
+## Why This Is A Dart And Kotlin Split, Not A Plugin Grab Bag
+
+The project is not split between Dart and Kotlin because "some things were easier native."
+
+It is split because the product has two fundamentally different responsibilities:
+
+- product surface and interaction design
+- reliability-critical Android execution
+
+Dart owns the parts that benefit from fast UI iteration and a clean declarative shell:
+
+- dashboard and settings flows
+- alarm editing
+- diagnostics presentation
+- mission UI and interaction rendering
+
+Kotlin owns the parts that must remain correct even if Flutter is not present at the moment the system wakes:
+
+- exact alarm scheduling
+- ring-session persistence
+- audio and vibration ownership
+- lock-screen/full-screen launch
+- inactivity timers and re-trigger behavior
+- dismissal authorization
+
+That split is important because it keeps the bridge narrow and intentional. The goal is not "Flutter app plus some native helpers." The goal is a UI shell talking to a native alarm engine that has clear authority.
+
+When that authority line is blurry, alarm apps accumulate hidden failure modes:
+
+- UI state starts acting like source of truth
+- mission progress becomes route-dependent
+- background enforcement depends on a live isolate
+- contributors add features by expanding the bridge instead of strengthening the model
+
+The Dart/Kotlin split is therefore a systems boundary, not a convenience choice.
+
 ## Why The Project Is Local-First
 
 The project exists partly as a rejection of ad-driven alarm apps. The cleanest way to keep that promise is to make the product work entirely on-device:
@@ -30,6 +66,28 @@ The project exists partly as a rejection of ad-driven alarm apps. The cleanest w
 - no internet dependency in MVP
 
 This also improves reliability. An alarm should not degrade because a remote service changed or became unavailable.
+
+## Why The Active Alarm Needs A Real State Machine
+
+An active alarm is not just "currently ringing" or "not ringing."
+
+As soon as missions, snooze caps, recovery, and inactivity enforcement exist, the system needs to distinguish meaningfully different states:
+
+- `ringing`
+- `mission_active`
+- `snoozed`
+
+Those states are not UI decoration. They change what the system is allowed to do:
+
+- whether audio should be playing
+- whether dismissal is legal
+- whether a timeout should re-trigger the alarm
+- whether the lock-screen experience should stay active
+- how recovery should behave after process death
+
+Without a persisted state machine, contributors end up encoding these rules indirectly through flags, route assumptions, or service-local conditions. That works only until the first serious recovery bug.
+
+The state machine exists to make alarm behavior explicit and recoverable.
 
 ## Why The Mission System Must Be Modular
 
@@ -42,6 +100,65 @@ The project therefore needs a mission contract with strict boundaries:
 - the UI renders progress and input for the active mission
 
 This separation should make it possible to add new missions without re-auditing the scheduler on every feature.
+
+## Why Mission Solving Does Not Silence The Alarm Immediately
+
+The first naive version of a mission alarm is easy to imagine:
+
+- the alarm fires
+- the mission screen appears
+- the sound keeps blasting until the mission is done
+
+That approach is simple, but it is poor product design for any mission that takes real time. If a user is genuinely engaging with the challenge, continuous full-volume ringing becomes noise rather than enforcement.
+
+The opposite extreme is also flawed:
+
+- the mission screen opens
+- the alarm immediately goes silent
+
+That weakens the alarm because opening a screen is not evidence of real engagement. A user can tap into the mission and then do nothing.
+
+The confirmation step exists to solve that tension.
+
+It creates a deliberate transition:
+
+- first, the alarm is firing and demanding attention
+- then, the user explicitly accepts mission work
+- only then is the alarm allowed to become silent
+
+That is why the confirmation screen is not just a UX flourish. It is the product-level boundary between coercion and effort.
+
+Once the user crosses that boundary, silence is conditional rather than permanent. Native inactivity enforcement makes the quiet period earned and revocable.
+
+## Why Mission Silence Is Enforced Natively
+
+If a mission becomes silent, the system still needs a way to punish stalling.
+
+That cannot depend on:
+
+- a Flutter timer
+- a particular widget being mounted
+- route-local state
+- a best-effort callback after process reclaim
+
+The inactivity timeout is native because it is part of the enforcement model, not just the interface. A mission may be quiet only while the native layer still has evidence that the user is engaged.
+
+That design is stricter, but it keeps the product honest: the silence during mission solving is a controlled state, not a loophole.
+
+## Why The Math Mission Is More Than A Toy Feature
+
+Math is the first mission not because it is the most exciting one, but because it proves the platform shape with low hardware complexity.
+
+It is the right first mission to validate:
+
+- mission-specific configuration
+- native runtime progress
+- multi-step completion instead of one-shot dismissal
+- UI-to-native answer submission
+- recovery of in-progress mission state
+- silence plus inactivity re-trigger during active solving
+
+If the math mission cannot be made coherent, the more complex `Steps` and `QR` missions would be built on a weak base.
 
 ## Why QR Is More Than A QR Feature
 

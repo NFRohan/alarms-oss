@@ -54,6 +54,12 @@ data class AlarmRingSession(
     val isRinging: Boolean
         get() = state == STATE_RINGING
 
+    val isMissionActive: Boolean
+        get() = state == STATE_MISSION_ACTIVE
+
+    val isActive: Boolean
+        get() = isRinging || isMissionActive
+
     val canSnooze: Boolean
         get() = snoozeCount < maxSnoozes
 
@@ -63,6 +69,10 @@ data class AlarmRingSession(
             startedAtEpochMillis = nowEpochMillis,
             nextSnoozeAtEpochMillis = null,
         )
+    }
+
+    fun activateMission(): AlarmRingSession {
+        return copy(state = STATE_MISSION_ACTIVE)
     }
 
     fun snoozedUntil(triggerAtEpochMillis: Long): AlarmRingSession {
@@ -79,6 +89,7 @@ data class AlarmRingSession(
 
     companion object {
         const val STATE_RINGING = "ringing"
+        const val STATE_MISSION_ACTIVE = "mission_active"
         const val STATE_SNOOZED = "snoozed"
 
         fun create(record: AlarmRecord): AlarmRingSession {

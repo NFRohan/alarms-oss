@@ -19,7 +19,10 @@ void main() {
       ringtone: AlarmRingtone.systemNotification,
       snoozeDurationMinutes: 9,
       maxSnoozes: 3,
-      mission: const MissionSpec.math(difficulty: MathMissionDifficulty.hard),
+      mission: const MissionSpec.math(
+        difficulty: MathMissionDifficulty.hard,
+        problemCount: 4,
+      ),
       nextTriggerAtUtc: DateTime.utc(2026, 3, 12, 1, 30),
     );
 
@@ -35,6 +38,7 @@ void main() {
     expect(roundTrip.ringtone, original.ringtone);
     expect(roundTrip.mission.type, original.mission.type);
     expect(roundTrip.mission.mathDifficulty, original.mission.mathDifficulty);
+    expect(roundTrip.mission.mathProblemCount, original.mission.mathProblemCount);
     expect(roundTrip.nextTriggerAtUtc, original.nextTriggerAtUtc);
   });
 

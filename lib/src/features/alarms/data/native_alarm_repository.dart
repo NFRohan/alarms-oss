@@ -1,6 +1,7 @@
 import 'package:alarms_oss/src/features/alarms/data/alarm_repository.dart';
 import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
 import 'package:flutter/services.dart';
 
@@ -39,11 +40,21 @@ class NativeAlarmRepository implements AlarmRepository {
   }
 
   @override
-  Future<bool> submitMathAnswer(String answer) async {
-    final accepted = await _channel.invokeMethod<bool>('submitMathAnswer', {
+  Future<void> startMission() {
+    return _channel.invokeMethod<void>('startMission');
+  }
+
+  @override
+  Future<void> registerMissionActivity() {
+    return _channel.invokeMethod<void>('registerMissionActivity');
+  }
+
+  @override
+  Future<MathAnswerSubmissionResult> submitMathAnswer(String answer) async {
+    final result = await _channel.invokeMethod<String>('submitMathAnswer', {
       'answer': answer,
     });
-    return accepted ?? false;
+    return MathAnswerSubmissionResult.fromId(result);
   }
 
   @override

@@ -50,5 +50,11 @@ class ActiveAlarmSession {
 
   bool get canSnooze => snoozeCount < maxSnoozes;
 
+  bool get isRinging => state == ActiveAlarmSessionState.ringing;
+
+  bool get isMissionActive => state == ActiveAlarmSessionState.missionActive;
+
   bool get requiresMission => !mission.spec.isDirectDismiss;
+
+  bool get awaitingMissionStart => requiresMission && isRinging;
 }

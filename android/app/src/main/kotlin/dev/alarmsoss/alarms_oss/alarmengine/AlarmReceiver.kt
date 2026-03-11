@@ -7,7 +7,9 @@ import android.content.Intent
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val alarmId = intent.getStringExtra(EXTRA_ALARM_ID) ?: return
-        if (intent.getBooleanExtra(EXTRA_IS_SNOOZE, false)) {
+        if (intent.getBooleanExtra(EXTRA_IS_SNOOZE, false) ||
+            intent.getBooleanExtra(EXTRA_IS_MISSION_TIMEOUT, false)
+        ) {
             AlarmRingingService.start(context, alarmId)
             return
         }
@@ -21,5 +23,6 @@ class AlarmReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_ALARM_ID = "alarm_id"
         const val EXTRA_IS_SNOOZE = "is_snooze"
+        const val EXTRA_IS_MISSION_TIMEOUT = "is_mission_timeout"
     }
 }

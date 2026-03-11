@@ -3,6 +3,7 @@ import 'package:alarms_oss/src/features/alarms/application/alarm_list_controller
 import 'package:alarms_oss/src/features/alarms/data/alarm_repository.dart';
 import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
 import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,7 +36,15 @@ class _FakeAlarmRepository implements AlarmRepository {
   Future<void> snoozeActiveAlarmSession() async {}
 
   @override
-  Future<bool> submitMathAnswer(String answer) async => false;
+  Future<void> startMission() async {}
+
+  @override
+  Future<void> registerMissionActivity() async {}
+
+  @override
+  Future<MathAnswerSubmissionResult> submitMathAnswer(String answer) async {
+    return MathAnswerSubmissionResult.incorrect;
+  }
 
   @override
   Future<AlarmEngineStatus> getStatus() async {

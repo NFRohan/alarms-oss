@@ -64,20 +64,37 @@ This keeps the QR mission fast today and makes future on-device object detection
 
 ### Mission Completion
 
-1. The active mission screen binds to the current `RingSession`.
-2. The mission driver reports progress and completion.
-3. Native session logic validates dismissal or snooze rules.
-4. The service stops only after a successful dismiss path.
+1. A mission alarm first enters the `ringing` state and shows a confirmation step.
+2. The user explicitly starts the mission, which transitions the session into `mission_active`.
+3. The mission driver reports user activity and mission answers back to the native layer.
+4. Native session logic validates progress, dismissal, snooze rules, and inactivity re-triggering.
+5. The service stops only after a successful dismiss path.
 
 ### Recovery
 
 If the app process dies while an alarm is ringing, the native session state remains authoritative. Relaunch should restore the user directly into the active mission flow.
+
+If the process dies while a mission is active, the session should still restore into the mission flow. The alarm engine, not Flutter route state, decides whether the app should show a ringing alarm, a mission in progress, or the dashboard.
+
+## Active Session State Machine
+
+The current active session has three persisted states:
+
+- `ringing`: alarm audio and vibration are expected to be active
+- `mission_active`: the user explicitly started the mission, the alarm is silent, and inactivity is enforced by a native timer
+- `snoozed`: the session is paused until the exact snooze alarm fires
+
+Mission inactivity is enforced natively. If a `mission_active` session goes idle for 30 seconds, the alarm re-enters `ringing` while preserving mission progress.
+
+See [active-session-lifecycle.md](active-session-lifecycle.md) for the full state machine and invariants.
 
 ## Key Invariants
 
 - Alarm delivery must not depend on a live Flutter isolate.
 - Ring audio must start before any mission UI dependency is satisfied.
 - Persisted alarm state and persisted ring-session state must be recoverable independently.
+- Mission silence must not depend on a Flutter-only timer.
+- A mission may be silent only while the native session is actively enforcing user engagement.
 - Mission implementations must not mutate scheduler behavior directly.
 - Vision missions must depend on analyzer results, not raw cross-platform frame transport.
 

@@ -42,7 +42,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun syncAlarmWindowState() {
-        val hasActiveAlarm = RingSessionStore(applicationContext).get()?.isRinging == true
+        val hasActiveAlarm = RingSessionStore(applicationContext).get()?.isActive == true
         val requestedAlarmUi =
             intent?.action == AlarmRingingService.ACTION_SHOW_ACTIVE_ALARM || hasActiveAlarm
 

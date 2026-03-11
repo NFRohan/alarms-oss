@@ -323,6 +323,38 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
                             },
                           ),
                         ),
+                        const SizedBox(height: 14),
+                        _EditorSelector(
+                          title: 'PROBLEM COUNT',
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _mission.mathProblemCount,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                            ),
+                            icon: const Icon(Icons.expand_more),
+                            items: const [1, 2, 3, 4, 5]
+                                .map(
+                                  (count) => DropdownMenuItem<int>(
+                                    value: count,
+                                    child: Text(
+                                      '$count ${count == 1 ? 'PROBLEM' : 'PROBLEMS'}',
+                                    ),
+                                  ),
+                                )
+                                .toList(growable: false),
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
+
+                              setState(() {
+                                _mission = _mission.copyWith(
+                                  mathProblemCount: value,
+                                );
+                              });
+                            },
+                          ),
+                        ),
                       ],
                       const SizedBox(height: 18),
                       Text('MAX SNOOZES', style: theme.textTheme.titleMedium),
@@ -426,7 +458,7 @@ class _AlarmEditorSheetState extends State<AlarmEditorSheet> {
       AlarmMissionType.math => const _MissionOption(
         title: 'Math mission',
         detail:
-            'Solve a generated math problem to dismiss the alarm. Difficulty is configurable below.',
+            'Solve generated math problems to dismiss the alarm. Difficulty and problem count are configurable below.',
         enabled: true,
       ),
       AlarmMissionType.steps => _MissionOption(
