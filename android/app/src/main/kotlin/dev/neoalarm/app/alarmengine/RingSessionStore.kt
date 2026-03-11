@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.content.Context
 import org.json.JSONObject
@@ -25,3 +25,4 @@ class RingSessionStore(context: Context) {
         private const val KEY_ACTIVE_SESSION = "active_ring_session"
     }
 }
+

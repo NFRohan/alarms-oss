@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import org.json.JSONObject
 
@@ -158,3 +158,4 @@ data class MissionSpec(
         }
     }
 }
+

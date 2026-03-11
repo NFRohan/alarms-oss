@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.app.AlarmManager
 import android.app.Notification
@@ -20,7 +20,7 @@ import android.os.VibratorManager
 import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import dev.alarmsoss.alarms_oss.MainActivity
+import dev.neoalarm.app.MainActivity
 
 class AlarmRingingService : Service() {
     private lateinit var alarmStore: AlarmStore
@@ -342,13 +342,13 @@ class AlarmRingingService : Service() {
         private const val EXTRA_ALARM_ID = "alarm_id"
         private const val MISSION_INACTIVITY_TIMEOUT_MS = 30_000L
         private const val WAKE_LOCK_TIMEOUT_MS = 30 * 60 * 1000L
-        const val ACTION_SHOW_ACTIVE_ALARM = "dev.alarmsoss.alarms_oss.SHOW_ACTIVE_ALARM"
-        private const val ACTION_START = "dev.alarmsoss.alarms_oss.START_ACTIVE_ALARM"
-        private const val ACTION_DISMISS = "dev.alarmsoss.alarms_oss.DISMISS_ACTIVE_ALARM"
-        private const val ACTION_SNOOZE = "dev.alarmsoss.alarms_oss.SNOOZE_ACTIVE_ALARM"
-        private const val ACTION_BEGIN_MISSION = "dev.alarmsoss.alarms_oss.BEGIN_MISSION"
+        const val ACTION_SHOW_ACTIVE_ALARM = "dev.neoalarm.app.SHOW_ACTIVE_ALARM"
+        private const val ACTION_START = "dev.neoalarm.app.START_ACTIVE_ALARM"
+        private const val ACTION_DISMISS = "dev.neoalarm.app.DISMISS_ACTIVE_ALARM"
+        private const val ACTION_SNOOZE = "dev.neoalarm.app.SNOOZE_ACTIVE_ALARM"
+        private const val ACTION_BEGIN_MISSION = "dev.neoalarm.app.BEGIN_MISSION"
         private const val ACTION_REGISTER_MISSION_ACTIVITY =
-            "dev.alarmsoss.alarms_oss.REGISTER_MISSION_ACTIVITY"
+            "dev.neoalarm.app.REGISTER_MISSION_ACTIVITY"
 
         fun start(context: Context, alarmId: String) {
             ContextCompat.startForegroundService(
@@ -448,3 +448,4 @@ class AlarmRingingService : Service() {
         )
     }
 }
+

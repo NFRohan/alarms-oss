@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.vision
+package dev.neoalarm.app.vision
 
 import android.Manifest
 import android.content.Context
@@ -15,10 +15,10 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
-import dev.alarmsoss.alarms_oss.alarmengine.AlarmRingingService
-import dev.alarmsoss.alarms_oss.alarmengine.MissionSpec
-import dev.alarmsoss.alarms_oss.alarmengine.QrMissionTrackingState
-import dev.alarmsoss.alarms_oss.alarmengine.RingSessionStore
+import dev.neoalarm.app.alarmengine.AlarmRingingService
+import dev.neoalarm.app.alarmengine.MissionSpec
+import dev.neoalarm.app.alarmengine.QrMissionTrackingState
+import dev.neoalarm.app.alarmengine.RingSessionStore
 import io.flutter.plugin.common.EventChannel
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -330,3 +330,4 @@ private enum class VisionSessionMode(val id: String) {
     QR_REGISTRATION("qr_registration"),
     QR_MISSION("qr_mission"),
 }
+

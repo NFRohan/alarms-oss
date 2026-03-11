@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.content.Context
 import org.json.JSONArray
@@ -45,3 +45,4 @@ class AlarmStore(context: Context) {
         private const val KEY_ALARMS = "alarms"
     }
 }
+

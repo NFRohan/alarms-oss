@@ -14,7 +14,7 @@ if (signingPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "dev.alarmsoss.alarms_oss"
+    namespace = "dev.neoalarm.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.alarmsoss.alarms_oss"
+        applicationId = "dev.neoalarm.app"
         minSdk = 29
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -76,3 +76,4 @@ dependencies {
 flutter {
     source = "../.."
 }
+

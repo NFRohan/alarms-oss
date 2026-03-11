@@ -1,11 +1,12 @@
-import 'package:alarms_oss/src/app/app.dart';
-import 'package:alarms_oss/src/features/alarms/application/alarm_list_controller.dart';
-import 'package:alarms_oss/src/features/alarms/data/alarm_repository.dart';
-import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
-import 'package:alarms_oss/src/features/app_startup/domain/app_startup_context.dart';
+import 'package:neoalarm/src/app/app.dart';
+import 'package:neoalarm/src/features/alarms/application/alarm_list_controller.dart';
+import 'package:neoalarm/src/features/alarms/data/alarm_repository.dart';
+import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/app_startup/domain/app_startup_context.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,8 +22,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('ALRM'), findsOneWidget);
-    expect(find.text('READY TO RING'), findsOneWidget);
+    expect(find.text('NeoAlarm'), findsOneWidget);
+    expect(find.text('READY TO RING'), findsNothing);
   });
 
   testWidgets('renders direct-boot-safe shell before unlock', (tester) async {
@@ -42,6 +43,30 @@ void main() {
 
     expect(find.text('DIRECT BOOT MODE'), findsOneWidget);
     expect(find.textContaining('Unlock the device'), findsOneWidget);
+  });
+
+  testWidgets('system back from settings returns to home shell', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          alarmRepositoryProvider.overrideWithValue(_FakeAlarmRepository()),
+        ],
+        child: const AlarmApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+    expect(find.text('SETTINGS'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('SETTINGS'), findsNothing);
+    expect(find.text('NeoAlarm'), findsOneWidget);
   });
 }
 

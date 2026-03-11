@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -26,3 +26,4 @@ class AlarmReceiver : BroadcastReceiver() {
         const val EXTRA_IS_MISSION_TIMEOUT = "is_mission_timeout"
     }
 }
+

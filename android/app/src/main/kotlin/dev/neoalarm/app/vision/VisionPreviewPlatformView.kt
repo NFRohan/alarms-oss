@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.vision
+package dev.neoalarm.app.vision
 
 import android.content.Context
 import android.view.View
@@ -34,3 +34,4 @@ private class VisionPreviewPlatformView(
         sessionManager.detachPreviewView(previewView)
     }
 }
+

@@ -1,10 +1,10 @@
-import 'package:alarms_oss/src/core/theme/app_theme.dart';
-import 'package:alarms_oss/src/core/ui/neo_brutal_widgets.dart';
-import 'package:alarms_oss/src/features/alarms/application/alarm_list_controller.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
-import 'package:alarms_oss/src/features/alarms/presentation/alarm_editor_sheet.dart';
-import 'package:alarms_oss/src/features/settings/presentation/settings_screen.dart';
+import 'package:neoalarm/src/core/theme/app_theme.dart';
+import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
+import 'package:neoalarm/src/features/alarms/application/alarm_list_controller.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/alarms/presentation/alarm_editor_sheet.dart';
+import 'package:neoalarm/src/features/settings/presentation/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,70 +48,84 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final engineStatus = ref.watch(alarmEngineStatusProvider);
     final showAddAlarm = _selectedTab == _DashboardTab.alarms;
 
-    return Scaffold(
-      backgroundColor: NeoColors.paper,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: showAddAlarm
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: NeoSquareIconButton(
-                icon: Icons.add,
-                backgroundColor: NeoColors.primary,
-                size: 76,
-                onPressed: () {
-                  _createAlarm(context, ref, engineStatus.asData?.value);
-                },
-              ),
-            )
-          : null,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
-        child: _selectedTab == _DashboardTab.alarms
-            ? _AlarmDashboardPage(
-                key: const ValueKey('alarms-tab'),
-                alarms: alarms,
-                engineStatus: engineStatus,
-                onRequestExactAlarmPermission: () {
-                  _requestExactAlarmPermission(context);
-                },
-                onRequestNotificationPermission: () {
-                  _requestNotificationPermission(context);
-                },
-                onOpenSettings: () {
-                  setState(() {
-                    _selectedTab = _DashboardTab.settings;
-                  });
-                },
-                onEdit: (alarm) =>
-                    _editAlarm(context, ref, alarm, engineStatus.asData?.value),
-                onDelete: (alarm) => _deleteAlarm(context, ref, alarm),
-                onToggle: (alarm, enabled) =>
-                    _setEnabled(context, ref, alarm, enabled),
+    return PopScope<Object?>(
+      canPop: _selectedTab == _DashboardTab.alarms,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _selectedTab == _DashboardTab.settings) {
+          setState(() {
+            _selectedTab = _DashboardTab.alarms;
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: NeoColors.paper,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButton: showAddAlarm
+            ? Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: NeoSquareIconButton(
+                  icon: Icons.add,
+                  backgroundColor: NeoColors.primary,
+                  size: 76,
+                  onPressed: () {
+                    _createAlarm(context, ref, engineStatus.asData?.value);
+                  },
+                ),
               )
-            : SettingsScreen(
-                key: const ValueKey('settings-tab'),
-                status: engineStatus,
-                onBack: () {
-                  setState(() {
-                    _selectedTab = _DashboardTab.alarms;
-                  });
-                },
-                onRequestExactAlarmAccess: () {
-                  _requestExactAlarmPermission(context);
-                },
-                onRequestNotificationAccess: () {
-                  _requestNotificationPermission(context);
-                },
-                onRequestBatteryOptimizationExemption: () {
-                  _requestBatteryOptimizationExemption(context);
-                },
-                onRequestCameraPermission: () {
-                  _requestCameraPermission(context);
-                },
-                onRequestActivityRecognitionPermission: () {
-                  _requestActivityRecognitionPermission(context);
-                },
-              ),
+            : null,
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _selectedTab == _DashboardTab.alarms
+              ? _AlarmDashboardPage(
+                  key: const ValueKey('alarms-tab'),
+                  alarms: alarms,
+                  engineStatus: engineStatus,
+                  onRequestExactAlarmPermission: () {
+                    _requestExactAlarmPermission(context);
+                  },
+                  onRequestNotificationPermission: () {
+                    _requestNotificationPermission(context);
+                  },
+                  onOpenSettings: () {
+                    setState(() {
+                      _selectedTab = _DashboardTab.settings;
+                    });
+                  },
+                  onEdit: (alarm) => _editAlarm(
+                    context,
+                    ref,
+                    alarm,
+                    engineStatus.asData?.value,
+                  ),
+                  onDelete: (alarm) => _deleteAlarm(context, ref, alarm),
+                  onToggle: (alarm, enabled) =>
+                      _setEnabled(context, ref, alarm, enabled),
+                )
+              : SettingsScreen(
+                  key: const ValueKey('settings-tab'),
+                  status: engineStatus,
+                  onBack: () {
+                    setState(() {
+                      _selectedTab = _DashboardTab.alarms;
+                    });
+                  },
+                  onRequestExactAlarmAccess: () {
+                    _requestExactAlarmPermission(context);
+                  },
+                  onRequestNotificationAccess: () {
+                    _requestNotificationPermission(context);
+                  },
+                  onRequestBatteryOptimizationExemption: () {
+                    _requestBatteryOptimizationExemption(context);
+                  },
+                  onRequestCameraPermission: () {
+                    _requestCameraPermission(context);
+                  },
+                  onRequestActivityRecognitionPermission: () {
+                    _requestActivityRecognitionPermission(context);
+                  },
+                ),
+        ),
       ),
     );
   }
@@ -271,10 +285,6 @@ class _AlarmDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final armedCount = alarms.asData?.value
-        .where((alarm) => alarm.enabled)
-        .length;
-
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
@@ -286,18 +296,8 @@ class _AlarmDashboardPage extends StatelessWidget {
             onRequestExactAlarmPermission: onRequestExactAlarmPermission,
             onRequestNotificationPermission: onRequestNotificationPermission,
           ),
-          const SizedBox(height: 18),
-          _HeroStatusCard(
-            engineStatus: engineStatus.asData?.value,
-            armedCount: armedCount ?? 0,
-            onOpenSettings: onOpenSettings,
-          ),
           const SizedBox(height: 22),
-          const NeoSectionTitle(
-            title: 'Your alarms',
-            subtitle:
-                'One-time and repeating alarms backed by the native Android scheduler.',
-          ),
+          const NeoSectionTitle(title: 'Your alarms'),
           const SizedBox(height: 14),
           _AlarmListSection(
             alarms: alarms,
@@ -328,7 +328,7 @@ class _DashboardHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'ALRM',
+                'NeoAlarm',
                 style: theme.textTheme.displaySmall?.copyWith(
                   fontStyle: FontStyle.italic,
                 ),
@@ -425,92 +425,6 @@ class _PermissionBannerRow extends StatelessWidget {
   }
 }
 
-class _HeroStatusCard extends StatelessWidget {
-  const _HeroStatusCard({
-    required this.engineStatus,
-    required this.armedCount,
-    required this.onOpenSettings,
-  });
-
-  final AlarmEngineStatus? engineStatus;
-  final int armedCount;
-  final VoidCallback onOpenSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isHealthy =
-        engineStatus != null &&
-        engineStatus!.canScheduleExactAlarms &&
-        engineStatus!.notificationsEnabled;
-
-    final accent = engineStatus == null
-        ? NeoColors.primary
-        : isHealthy
-        ? NeoColors.success
-        : NeoColors.orange;
-
-    final headline = engineStatus == null
-        ? 'CHECKING SYSTEMS'
-        : isHealthy
-        ? 'READY TO RING'
-        : 'ACTION REQUIRED';
-
-    final detail = engineStatus == null
-        ? 'Checking Android alarm access and notification delivery.'
-        : isHealthy
-        ? '$armedCount armed ${armedCount == 1 ? 'alarm' : 'alarms'}. Exact timing and notifications look healthy.'
-        : 'Android still needs attention before this becomes trustworthy. Finish setup from Settings.';
-
-    return NeoPanel(
-      color: NeoColors.panel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: accent,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: NeoColors.ink, width: 2),
-                ),
-                child: const Icon(Icons.alarm, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Alarm readiness', style: theme.textTheme.labelMedium),
-                    Text(headline, style: theme.textTheme.headlineMedium),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            detail,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: NeoColors.subtext,
-            ),
-          ),
-          const SizedBox(height: 16),
-          NeoActionButton(
-            label: 'Open settings',
-            compact: true,
-            backgroundColor: NeoColors.cyan,
-            onPressed: onOpenSettings,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AlarmListSection extends StatelessWidget {
   const _AlarmListSection({
     required this.alarms,
@@ -540,7 +454,7 @@ class _AlarmListSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Create your first one-time or repeating alarm to start exercising the native scheduler.',
+                  'Create your first one-time or repeating alarm.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: NeoColors.subtext),

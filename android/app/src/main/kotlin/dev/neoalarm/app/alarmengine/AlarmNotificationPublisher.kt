@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import dev.alarmsoss.alarms_oss.MainActivity
+import dev.neoalarm.app.MainActivity
 
 class AlarmNotificationPublisher(private val context: Context) {
     private val notificationManager = context.getSystemService(NotificationManager::class.java)
@@ -61,3 +61,4 @@ class AlarmNotificationPublisher(private val context: Context) {
         private const val TAG = "AlarmNotification"
     }
 }
+

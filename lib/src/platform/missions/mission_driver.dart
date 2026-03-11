@@ -1,5 +1,5 @@
-import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
 import 'package:flutter/widgets.dart';
 
 class MissionActionCallbacks {

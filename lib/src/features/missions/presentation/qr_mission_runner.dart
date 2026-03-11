@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:alarms_oss/src/core/theme/app_theme.dart';
-import 'package:alarms_oss/src/core/ui/neo_brutal_widgets.dart';
-import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
-import 'package:alarms_oss/src/platform/missions/mission_driver.dart';
-import 'package:alarms_oss/src/platform/vision/vision_controller.dart';
+import 'package:neoalarm/src/core/theme/app_theme.dart';
+import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
+import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/platform/missions/mission_driver.dart';
+import 'package:neoalarm/src/platform/vision/vision_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

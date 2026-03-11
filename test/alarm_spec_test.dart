@@ -1,5 +1,5 @@
-import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

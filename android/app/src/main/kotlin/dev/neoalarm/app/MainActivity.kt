@@ -1,14 +1,14 @@
-package dev.alarmsoss.alarms_oss
+package dev.neoalarm.app
 
 import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
-import dev.alarmsoss.alarms_oss.alarmengine.AlarmEngineMethodCallHandler
-import dev.alarmsoss.alarms_oss.alarmengine.AlarmRingingService
-import dev.alarmsoss.alarms_oss.alarmengine.RingSessionStore
-import dev.alarmsoss.alarms_oss.vision.VisionMethodCallHandler
-import dev.alarmsoss.alarms_oss.vision.VisionPreviewPlatformViewFactory
-import dev.alarmsoss.alarms_oss.vision.VisionSessionManager
+import dev.neoalarm.app.alarmengine.AlarmEngineMethodCallHandler
+import dev.neoalarm.app.alarmengine.AlarmRingingService
+import dev.neoalarm.app.alarmengine.RingSessionStore
+import dev.neoalarm.app.vision.VisionMethodCallHandler
+import dev.neoalarm.app.vision.VisionPreviewPlatformViewFactory
+import dev.neoalarm.app.vision.VisionSessionManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -43,7 +43,7 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "dev.alarmsoss.alarm_engine",
+            "dev.neoalarm.app.alarm_engine",
         ).setMethodCallHandler(
             AlarmEngineMethodCallHandler(
                 context = applicationContext,
@@ -53,16 +53,16 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "dev.alarmsoss.vision",
+            "dev.neoalarm.app.vision",
         ).setMethodCallHandler(VisionMethodCallHandler(visionSessionManager))
 
         EventChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "dev.alarmsoss.vision/events",
+            "dev.neoalarm.app.vision/events",
         ).setStreamHandler(visionSessionManager)
 
         flutterEngine.platformViewsController.registry.registerViewFactory(
-            "dev.alarmsoss.vision/preview",
+            "dev.neoalarm.app.vision/preview",
             VisionPreviewPlatformViewFactory(visionSessionManager),
         )
     }
@@ -81,3 +81,4 @@ class MainActivity : FlutterActivity() {
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import kotlin.random.Random
 import org.json.JSONObject
@@ -477,3 +477,4 @@ data class AlarmMissionRuntime(
         }
     }
 }
+

@@ -1,8 +1,8 @@
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
-import 'package:alarms_oss/src/features/missions/application/mission_registry.dart';
-import 'package:alarms_oss/src/platform/missions/mission_driver.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/missions/application/mission_registry.dart';
+import 'package:neoalarm/src/platform/missions/mission_driver.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 

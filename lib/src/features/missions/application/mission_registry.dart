@@ -1,10 +1,10 @@
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
-import 'package:alarms_oss/src/features/missions/presentation/math_mission_runner.dart';
-import 'package:alarms_oss/src/features/missions/presentation/qr_mission_runner.dart';
-import 'package:alarms_oss/src/features/missions/presentation/steps_mission_runner.dart';
-import 'package:alarms_oss/src/platform/missions/mission_driver.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:neoalarm/src/features/missions/presentation/math_mission_runner.dart';
+import 'package:neoalarm/src/features/missions/presentation/qr_mission_runner.dart';
+import 'package:neoalarm/src/features/missions/presentation/steps_mission_runner.dart';
+import 'package:neoalarm/src/platform/missions/mission_driver.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -25,3 +25,4 @@ class AlarmRescheduleReceiver : BroadcastReceiver() {
         )
     }
 }
+

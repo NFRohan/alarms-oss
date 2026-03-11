@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.vision
+package dev.neoalarm.app.vision
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -35,3 +35,4 @@ class VisionMethodCallHandler(
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.Manifest
 import android.content.Context
@@ -145,3 +145,4 @@ object StepMissionTracker {
         }
     }
 }
+

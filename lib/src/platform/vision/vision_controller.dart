@@ -86,8 +86,8 @@ abstract class VisionController {
 class NativeVisionController implements VisionController {
   const NativeVisionController();
 
-  static const _methodChannel = MethodChannel('dev.alarmsoss.vision');
-  static const _eventChannel = EventChannel('dev.alarmsoss.vision/events');
+  static const _methodChannel = MethodChannel('dev.neoalarm.app.vision');
+  static const _eventChannel = EventChannel('dev.neoalarm.app.vision/events');
 
   @override
   Stream<VisionEvent> events() {
@@ -119,6 +119,6 @@ class VisionPreviewSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AndroidView(viewType: 'dev.alarmsoss.vision/preview');
+    return const AndroidView(viewType: 'dev.neoalarm.app.vision/preview');
   }
 }

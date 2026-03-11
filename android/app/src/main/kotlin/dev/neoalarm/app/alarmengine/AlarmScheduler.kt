@@ -1,11 +1,11 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import dev.alarmsoss.alarms_oss.MainActivity
+import dev.neoalarm.app.MainActivity
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -170,3 +170,4 @@ class AlarmScheduler(
 }
 
 class ExactAlarmPermissionException(message: String) : IllegalStateException(message)
+

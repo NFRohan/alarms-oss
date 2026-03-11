@@ -1,4 +1,4 @@
-import 'package:alarms_oss/src/app/app.dart';
+import 'package:neoalarm/src/app/app.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -1,4 +1,4 @@
-import 'package:alarms_oss/src/core/theme/app_theme.dart';
+import 'package:neoalarm/src/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class NeoPanel extends StatelessWidget {

@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -114,3 +114,4 @@ data class AlarmRecord(
         }
     }
 }
+

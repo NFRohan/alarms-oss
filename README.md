@@ -1,4 +1,4 @@
-# alarms-oss
+# NeoAlarm
 
 Android-first, local-first, open source alarm app built with Flutter and a native Android core.
 
@@ -55,3 +55,4 @@ Optional release-signing secrets for the release workflow:
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEYSTORE_PASSWORD`
 - `ANDROID_KEY_PASSWORD`
+

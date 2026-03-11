@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.Manifest
 import android.app.Activity
@@ -363,3 +363,4 @@ class AlarmEngineMethodCallHandler(
         private const val REQUEST_NOTIFICATIONS_CODE = 1001
     }
 }
+

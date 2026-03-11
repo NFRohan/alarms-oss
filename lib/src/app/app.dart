@@ -1,8 +1,8 @@
-import 'package:alarms_oss/src/core/theme/app_theme.dart';
-import 'package:alarms_oss/src/features/alarms/application/active_alarm_session_controller.dart';
-import 'package:alarms_oss/src/features/alarms/presentation/active_alarm_screen.dart';
-import 'package:alarms_oss/src/features/app_startup/application/app_startup_controller.dart';
-import 'package:alarms_oss/src/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:neoalarm/src/core/theme/app_theme.dart';
+import 'package:neoalarm/src/features/alarms/application/active_alarm_session_controller.dart';
+import 'package:neoalarm/src/features/alarms/presentation/active_alarm_screen.dart';
+import 'package:neoalarm/src/features/app_startup/application/app_startup_controller.dart';
+import 'package:neoalarm/src/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,7 +12,7 @@ class AlarmApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'alarms-oss',
+      title: 'NeoAlarm',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: const _AlarmAppShell(),

@@ -1,4 +1,4 @@
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
 
 class ActiveAlarmSession {
   const ActiveAlarmSession({

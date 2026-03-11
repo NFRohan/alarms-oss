@@ -1,6 +1,6 @@
-import 'package:alarms_oss/src/core/theme/app_theme.dart';
-import 'package:alarms_oss/src/core/ui/neo_brutal_widgets.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/core/theme/app_theme.dart';
+import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -80,6 +80,8 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
+          _AlarmReadinessCard(status: status),
+          const SizedBox(height: 18),
           _DeviceDiagnosticsSection(
             status: status,
             onRequestExactAlarmAccess: onRequestExactAlarmAccess,
@@ -90,24 +92,84 @@ class SettingsScreen extends StatelessWidget {
             onRequestActivityRecognitionPermission:
                 onRequestActivityRecognitionPermission,
           ),
-          const SizedBox(height: 18),
-          NeoPanel(
-            color: NeoColors.warm,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('COMING NEXT', style: theme.textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                Text(
-                  'Backup, restore, alarm history, and advanced reliability controls will live here once the core alarm engine is finished.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: NeoColors.subtext,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _AlarmReadinessCard extends StatelessWidget {
+  const _AlarmReadinessCard({required this.status});
+
+  final AsyncValue<AlarmEngineStatus> status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return status.when(
+      data: (status) {
+        final isHealthy =
+            status.canScheduleExactAlarms && status.notificationsEnabled;
+        final accent = isHealthy ? NeoColors.success : NeoColors.orange;
+        final headline = isHealthy ? 'READY TO RING' : 'ACTION REQUIRED';
+        final detail = isHealthy
+            ? 'Exact timing and notification delivery look healthy.'
+            : 'Android still needs attention before alarm behavior is fully trustworthy.';
+
+        return NeoPanel(
+          color: NeoColors.panel,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: NeoColors.ink, width: 2),
+                    ),
+                    child: const Icon(Icons.alarm, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alarm readiness',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        Text(headline, style: theme.textTheme.headlineMedium),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                detail,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: NeoColors.subtext,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => NeoPanel(
+        color: NeoColors.panel,
+        child: Text(
+          'Checking alarm readiness...',
+          style: theme.textTheme.bodyMedium,
+        ),
+      ),
+      error: (error, stackTrace) => NeoPanel(
+        color: NeoColors.panel,
+        child: Text('$error', style: theme.textTheme.bodyMedium),
       ),
     );
   }

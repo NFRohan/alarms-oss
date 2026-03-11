@@ -1,15 +1,15 @@
-import 'package:alarms_oss/src/features/alarms/data/alarm_repository.dart';
-import 'package:alarms_oss/src/features/alarms/domain/active_alarm_session.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
-import 'package:alarms_oss/src/features/app_startup/domain/app_startup_context.dart';
+import 'package:neoalarm/src/features/alarms/data/alarm_repository.dart';
+import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/app_startup/domain/app_startup_context.dart';
 import 'package:flutter/services.dart';
 
 class NativeAlarmRepository implements AlarmRepository {
   const NativeAlarmRepository();
 
-  static const _channel = MethodChannel('dev.alarmsoss.alarm_engine');
+  static const _channel = MethodChannel('dev.neoalarm.app.alarm_engine');
 
   @override
   Future<AlarmEngineStatus> getStatus() async {

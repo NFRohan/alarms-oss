@@ -1,7 +1,7 @@
-import 'package:alarms_oss/src/features/alarms/data/alarm_repository.dart';
-import 'package:alarms_oss/src/features/alarms/data/native_alarm_repository.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/alarms/data/alarm_repository.dart';
+import 'package:neoalarm/src/features/alarms/data/native_alarm_repository.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final alarmRepositoryProvider = Provider<AlarmRepository>(

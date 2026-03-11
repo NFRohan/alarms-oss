@@ -1,10 +1,10 @@
-import 'package:alarms_oss/src/core/theme/app_theme.dart';
-import 'package:alarms_oss/src/core/ui/neo_brutal_widgets.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_mission.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_engine_status.dart';
-import 'package:alarms_oss/src/features/alarms/domain/alarm_spec.dart';
-import 'package:alarms_oss/src/features/alarms/presentation/qr_target_capture_screen.dart';
-import 'package:alarms_oss/src/features/missions/application/mission_registry.dart';
+import 'package:neoalarm/src/core/theme/app_theme.dart';
+import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/alarms/presentation/qr_target_capture_screen.dart';
+import 'package:neoalarm/src/features/missions/application/mission_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

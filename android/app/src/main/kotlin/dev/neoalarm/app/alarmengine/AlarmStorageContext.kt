@@ -1,4 +1,4 @@
-package dev.alarmsoss.alarms_oss.alarmengine
+package dev.neoalarm.app.alarmengine
 
 import android.content.Context
 
@@ -14,3 +14,4 @@ internal fun alarmEngineStorageContext(context: Context): Context {
 
     return storageContext
 }
+
