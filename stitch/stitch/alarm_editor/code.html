@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400..700,FILL@0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffff00",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23230f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderWidth: {
+                        '4': '4px',
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px", 
+                        "lg": "0px", 
+                        "xl": "0px", 
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .neo-shadow {
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+        }
+        .neo-shadow-sm {
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,1);
+        }
+        .neo-border {
+            border: 4px solid black;
+        }
+        .neo-border-thin {
+            border: 2px solid black;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex justify-center p-0 md:p-8">
+<div class="w-full max-w-md bg-white dark:bg-slate-900 neo-border neo-shadow flex flex-col overflow-hidden">
+<!-- TopAppBar Header -->
+<div class="flex items-center bg-white dark:bg-slate-900 border-b-4 border-black p-4 justify-between">
+<div class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined font-bold text-3xl">close</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-black leading-tight tracking-tight flex-1 text-center pr-12 uppercase">New Alarm</h2>
+</div>
+<!-- Time Picker Section -->
+<div class="flex flex-col items-center py-10 bg-primary/10 border-b-4 border-black">
+<div class="flex items-center gap-4">
+<!-- Hour -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-24 h-32 bg-white dark:bg-slate-800 neo-border neo-shadow flex items-center justify-center">
+<span class="text-6xl font-black italic">07</span>
+</div>
+</div>
+<span class="text-6xl font-black">:</span>
+<!-- Minute -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-24 h-32 bg-white dark:bg-slate-800 neo-border neo-shadow flex items-center justify-center">
+<span class="text-6xl font-black italic">30</span>
+</div>
+</div>
+<!-- AM/PM Toggle -->
+<div class="flex flex-col gap-2 ml-2">
+<div class="px-4 py-2 bg-primary neo-border-thin font-black text-sm">AM</div>
+<div class="px-4 py-2 bg-white dark:bg-slate-800 neo-border-thin font-black text-sm opacity-30 text-slate-400">PM</div>
+</div>
+</div>
+</div>
+<!-- Inputs Section -->
+<div class="p-6 space-y-6">
+<!-- Label Input -->
+<div class="flex flex-col gap-2">
+<p class="text-slate-900 dark:text-slate-100 text-lg font-black uppercase tracking-tight">Label</p>
+<input class="w-full neo-border bg-white dark:bg-slate-800 p-4 text-lg font-bold placeholder:text-slate-400 placeholder:font-black focus:ring-0 focus:outline-none" placeholder="ALARM LABEL" value="Wake Up Call"/>
+</div>
+<!-- Repeat Chips -->
+<div class="flex flex-col gap-2">
+<p class="text-slate-900 dark:text-slate-100 text-lg font-black uppercase tracking-tight">Repeat</p>
+<div class="flex justify-between gap-1">
+<button class="size-10 neo-border-thin bg-primary text-slate-900 font-black flex items-center justify-center">M</button>
+<button class="size-10 neo-border-thin bg-primary text-slate-900 font-black flex items-center justify-center">T</button>
+<button class="size-10 neo-border-thin bg-primary text-slate-900 font-black flex items-center justify-center">W</button>
+<button class="size-10 neo-border-thin bg-primary text-slate-900 font-black flex items-center justify-center">T</button>
+<button class="size-10 neo-border-thin bg-primary text-slate-900 font-black flex items-center justify-center">F</button>
+<button class="size-10 neo-border-thin bg-white dark:bg-slate-800 text-slate-400 font-black flex items-center justify-center">S</button>
+<button class="size-10 neo-border-thin bg-white dark:bg-slate-800 text-slate-400 font-black flex items-center justify-center">S</button>
+</div>
+</div>
+<!-- Selectors -->
+<div class="space-y-4">
+<!-- Ringtone -->
+<div class="flex items-center justify-between neo-border p-4 bg-white dark:bg-slate-800 cursor-pointer">
+<div>
+<p class="text-xs font-black uppercase text-slate-500">Ringtone</p>
+<p class="text-lg font-black uppercase">Classic Beep</p>
+</div>
+<span class="material-symbols-outlined font-black">expand_more</span>
+</div>
+<!-- Snooze -->
+<div class="flex items-center justify-between neo-border p-4 bg-white dark:bg-slate-800 cursor-pointer">
+<div>
+<p class="text-xs font-black uppercase text-slate-500">Snooze</p>
+<p class="text-lg font-black uppercase">5 Minutes</p>
+</div>
+<span class="material-symbols-outlined font-black">expand_more</span>
+</div>
+<!-- Dismissal -->
+<div class="flex items-center justify-between neo-border p-4 bg-white dark:bg-slate-800 cursor-pointer">
+<div>
+<p class="text-xs font-black uppercase text-slate-500">Dismissal</p>
+<p class="text-lg font-black uppercase">Math Mission</p>
+</div>
+<span class="material-symbols-outlined font-black">expand_more</span>
+</div>
+</div>
+<!-- Enabled Toggle -->
+<div class="flex items-center justify-between py-2">
+<span class="text-lg font-black uppercase">Enabled</span>
+<div class="w-16 h-8 neo-border bg-slate-200 dark:bg-slate-700 relative cursor-pointer">
+<div class="absolute right-0 top-0 bottom-0 w-8 bg-primary neo-border-thin flex items-center justify-center translate-x-1 -translate-y-1 neo-shadow-sm"></div>
+</div>
+</div>
+</div>
+<!-- Save Button Section -->
+<div class="p-6 mt-auto">
+<button class="w-full bg-primary neo-border p-6 text-2xl font-black uppercase tracking-widest neo-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all active:bg-yellow-400">
+                Save Alarm
+            </button>
+</div>
+</div>
+</body></html>

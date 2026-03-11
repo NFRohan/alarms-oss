@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Device Diagnostics - System Check</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffff00",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23230f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0rem",
+                        "lg": "0rem",
+                        "xl": "0rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .neobrutal-shadow {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .neobrutal-border {
+            border: 2px solid #000000;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-md mx-auto min-h-screen bg-background-light dark:bg-background-dark flex flex-col border-x-2 border-black">
+<header class="p-6 border-b-4 border-black bg-primary">
+<div class="flex items-center gap-4">
+<button class="neobrutal-border bg-white p-2 flex items-center justify-center hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all neobrutal-shadow">
+<span class="material-symbols-outlined font-bold">arrow_back</span>
+</button>
+<h1 class="text-3xl font-black uppercase tracking-tighter italic">System Check</h1>
+</div>
+</header>
+<main class="flex-1 p-4 space-y-6">
+<section class="space-y-4">
+<div class="neobrutal-border bg-white dark:bg-slate-800 p-4 neobrutal-shadow flex items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="bg-green-400 neobrutal-border p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-bold">check_circle</span>
+</div>
+<div>
+<p class="font-black text-lg leading-none uppercase italic">Exact Alarm Status</p>
+<p class="text-sm font-medium opacity-70">Allowed for precise timing</p>
+</div>
+</div>
+<button class="neobrutal-border bg-primary px-4 py-1 text-sm font-black uppercase hover:bg-yellow-300 transition-colors">
+                        Settings
+                    </button>
+</div>
+<div class="neobrutal-border bg-white dark:bg-slate-800 p-4 neobrutal-shadow flex items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="bg-primary neobrutal-border p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-bold">warning</span>
+</div>
+<div>
+<p class="font-black text-lg leading-none uppercase italic">Notification Status</p>
+<p class="text-sm font-medium opacity-70">Alerts may be delayed</p>
+</div>
+</div>
+<button class="neobrutal-border bg-black text-white px-6 py-1 text-sm font-black uppercase hover:bg-slate-800 transition-colors">
+                        Fix
+                    </button>
+</div>
+<div class="neobrutal-border bg-white dark:bg-slate-800 p-4 neobrutal-shadow flex items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="bg-primary neobrutal-border p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-bold">battery_alert</span>
+</div>
+<div>
+<p class="font-black text-lg leading-none uppercase italic">Battery Optimization</p>
+<p class="text-sm font-medium opacity-70">Restricted background activity</p>
+</div>
+</div>
+<button class="neobrutal-border bg-black text-white px-6 py-1 text-sm font-black uppercase hover:bg-slate-800 transition-colors">
+                        Fix
+                    </button>
+</div>
+<div class="neobrutal-border bg-white dark:bg-slate-800 p-4 neobrutal-shadow flex items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="bg-green-400 neobrutal-border p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-bold">photo_camera</span>
+</div>
+<div>
+<p class="font-black text-lg leading-none uppercase italic">Camera Readiness</p>
+<p class="text-sm font-medium opacity-70">Permissions granted</p>
+</div>
+</div>
+<button class="neobrutal-border bg-primary px-4 py-1 text-sm font-black uppercase hover:bg-yellow-300 transition-colors">
+                        Settings
+                    </button>
+</div>
+<div class="neobrutal-border bg-white dark:bg-slate-800 p-4 neobrutal-shadow flex items-center justify-between gap-4 border-l-[12px] border-l-primary">
+<div class="flex items-center gap-4">
+<div class="bg-primary neobrutal-border p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-bold">footprint</span>
+</div>
+<div>
+<p class="font-black text-lg leading-none uppercase italic">Steps Mission</p>
+<p class="text-sm font-medium opacity-70">Sensor access required</p>
+</div>
+</div>
+<button class="neobrutal-border bg-black text-white px-6 py-1 text-sm font-black uppercase hover:bg-slate-800 transition-colors">
+                        Fix
+                    </button>
+</div>
+</section>
+<div class="mt-8 p-6 neobrutal-border bg-primary/20 flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-4xl mb-2">info</span>
+<p class="text-sm font-bold uppercase">To ensure your alarm wakes you up, all warnings must be resolved.</p>
+</div>
+</main>
+<footer class="p-6 border-t-4 border-black bg-white dark:bg-slate-900 sticky bottom-0">
+<button class="w-full neobrutal-border bg-primary p-4 text-xl font-black uppercase italic neobrutal-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">
+                Run Full Diagnostic
+            </button>
+</footer>
+</div>
+</body></html>

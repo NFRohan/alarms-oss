@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffff00",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23230f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "0px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .neobrutal-shadow {
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+        }
+        .neobrutal-shadow-lg {
+            box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+        }
+        .neobrutal-border {
+            border: 3px solid #000000;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Navigation -->
+<nav class="flex items-center justify-between p-6 bg-background-light dark:bg-background-dark border-b-4 border-black">
+<div class="flex items-center justify-center p-2 neobrutal-border bg-primary neobrutal-shadow cursor-pointer">
+<span class="material-symbols-outlined font-bold">menu</span>
+</div>
+<h1 class="text-2xl font-900 uppercase tracking-tighter italic">TickTock_</h1>
+<div class="flex items-center justify-center p-2 neobrutal-border bg-white dark:bg-slate-800 neobrutal-shadow cursor-pointer">
+<span class="material-symbols-outlined font-bold">settings</span>
+</div>
+</nav>
+<!-- Main Content: Empty State -->
+<main class="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
+<!-- Illustration Area -->
+<div class="relative mb-10">
+<div class="w-64 h-64 neobrutal-border bg-primary neobrutal-shadow-lg flex items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(#000_20%,transparent_20%)] [background-size:20px_20px]"></div>
+<span class="material-symbols-outlined text-[120px] font-bold text-black transform -rotate-12">notifications_off</span>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -top-4 -right-4 w-12 h-12 bg-white dark:bg-slate-800 neobrutal-border neobrutal-shadow flex items-center justify-center font-black text-xl">
+                ?
+            </div>
+</div>
+<!-- Typography Section -->
+<div class="max-w-md space-y-6">
+<h2 class="text-5xl font-900 uppercase tracking-tighter leading-none italic bg-primary inline-block px-4 py-2 neobrutal-border neobrutal-shadow">
+                NO ALARMS YET
+            </h2>
+<p class="text-xl font-bold leading-tight border-l-4 border-black pl-4 text-left">
+                Your morning is currently a blank canvas. Let's paint some noise on it and get you moving.
+            </p>
+<!-- CTA Button -->
+<div class="pt-6">
+<button class="w-full py-5 bg-primary neobrutal-border neobrutal-shadow-lg flex items-center justify-center gap-3 hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all duration-75">
+<span class="material-symbols-outlined font-black">add_circle</span>
+<span class="text-2xl font-900 uppercase italic">ADD FIRST ALARM</span>
+</button>
+</div>
+<!-- Trust Badges -->
+<div class="flex flex-wrap justify-center gap-4 pt-8">
+<div class="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 neobrutal-border text-xs font-bold uppercase">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+                    LOCAL FIRST
+                </div>
+<div class="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 neobrutal-border text-xs font-bold uppercase">
+<span class="material-symbols-outlined text-sm">block</span>
+                    NO ADS
+                </div>
+<div class="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 neobrutal-border text-xs font-bold uppercase">
+<span class="material-symbols-outlined text-sm">visibility_off</span>
+                    NO TRACKING
+                </div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<footer class="mt-auto border-t-4 border-black bg-white dark:bg-slate-900">
+<div class="flex h-20">
+<a class="flex-1 flex flex-col items-center justify-center gap-1 border-r-4 border-black bg-primary group" href="#">
+<span class="material-symbols-outlined font-black">alarm</span>
+<span class="text-xs font-900 uppercase italic">Alarms</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center gap-1 border-r-4 border-black hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">public</span>
+<span class="text-xs font-bold uppercase">World</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center gap-1 border-r-4 border-black hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">hourglass_empty</span>
+<span class="text-xs font-bold uppercase">Timer</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center gap-1 hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">timer</span>
+<span class="text-xs font-bold uppercase">Stop</span>
+</a>
+</div>
+</footer>
+</body></html>

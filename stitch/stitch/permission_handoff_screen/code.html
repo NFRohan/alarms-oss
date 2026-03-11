@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffff00",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23230f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .neobrutal-shadow {
+            box-shadow: 6px 6px 0px 0px #000000;
+        }
+        .neobrutal-shadow-sm {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .neobrutal-border {
+            border: 3px solid #000000;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark border-x-4 border-black">
+<!-- Header -->
+<header class="flex items-center p-6 border-b-4 border-black bg-primary">
+<button class="flex items-center justify-center size-10 neobrutal-border bg-white text-black hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all mr-4">
+<span class="material-symbols-outlined font-bold">arrow_back</span>
+</button>
+<h2 class="text-2xl font-black uppercase tracking-tighter text-black">System Access</h2>
+</header>
+<main class="flex-1 p-6">
+<div class="mb-8">
+<h1 class="text-5xl font-black uppercase italic tracking-tighter leading-[0.9] mb-4">Permissions Required</h1>
+<p class="text-lg font-bold border-l-4 border-black pl-3 py-1">
+                    To wake you up on time, we need a few things from your system. Don't let the sleep wins.
+                </p>
+</div>
+<div class="space-y-8">
+<!-- EXACT ALARM Section -->
+<div class="flex flex-col gap-4 neobrutal-border p-5 bg-white dark:bg-slate-800 neobrutal-shadow">
+<div class="flex items-center gap-3">
+<div class="bg-primary neobrutal-border size-12 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-black text-3xl">alarm_on</span>
+</div>
+<h3 class="text-xl font-black uppercase italic">Exact Alarm</h3>
+</div>
+<p class="text-sm font-medium leading-tight">
+                        Allows the app to trigger alarms precisely at the set time without system-enforced delays.
+                    </p>
+<button class="flex items-center justify-between bg-primary neobrutal-border p-3 neobrutal-shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all group">
+<span class="font-black text-lg uppercase italic text-black">Fix Permission</span>
+<span class="material-symbols-outlined text-black font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- NOTIFICATIONS Section -->
+<div class="flex flex-col gap-4 neobrutal-border p-5 bg-white dark:bg-slate-800 neobrutal-shadow">
+<div class="flex items-center gap-3">
+<div class="bg-primary neobrutal-border size-12 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-black text-3xl">notifications_active</span>
+</div>
+<h3 class="text-xl font-black uppercase italic">Notifications</h3>
+</div>
+<p class="text-sm font-medium leading-tight">
+                        Required to show the alarm screen and play sounds when it's time to get out of bed.
+                    </p>
+<button class="flex items-center justify-between bg-primary neobrutal-border p-3 neobrutal-shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all group">
+<span class="font-black text-lg uppercase italic text-black">Enable Now</span>
+<span class="material-symbols-outlined text-black font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- BATTERY OPTIMIZATION Section -->
+<div class="flex flex-col gap-4 neobrutal-border p-5 bg-white dark:bg-slate-800 neobrutal-shadow">
+<div class="flex items-center gap-3">
+<div class="bg-primary neobrutal-border size-12 flex items-center justify-center">
+<span class="material-symbols-outlined text-black font-black text-3xl">battery_charging_full</span>
+</div>
+<h3 class="text-xl font-black uppercase italic">Battery Optimization</h3>
+</div>
+<p class="text-sm font-medium leading-tight">
+                        Exclude the app from battery restrictions so the alarm isn't killed in the background.
+                    </p>
+<button class="flex items-center justify-between bg-primary neobrutal-border p-3 neobrutal-shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all group">
+<span class="font-black text-lg uppercase italic text-black">Optimize</span>
+<span class="material-symbols-outlined text-black font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Return Action -->
+<div class="mt-12 mb-8">
+<button class="w-full neobrutal-border bg-slate-200 dark:bg-slate-700 py-4 font-black uppercase text-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                    Return to Home
+                </button>
+</div>
+</main>
+<!-- Footer / Decorative -->
+<footer class="h-4 bg-primary border-t-4 border-black"></footer>
+</div>
+</body></html>

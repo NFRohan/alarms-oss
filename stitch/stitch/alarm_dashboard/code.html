@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffff00",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23230f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .neo-shadow {
+            box-shadow: 6px 6px 0px 0px #000000;
+        }
+        .neo-shadow-sm {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .neo-border {
+            border: 4px solid #000000;
+        }
+        .neo-border-sm {
+            border: 2px solid #000000;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-background-light dark:bg-background-dark border-b-4 border-black p-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-4xl font-black">menu</span>
+<h1 class="text-4xl font-black tracking-tighter italic uppercase">ALRM</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="neo-border-sm bg-primary p-2 neo-shadow-sm">
+<span class="material-symbols-outlined font-bold">person</span>
+</button>
+</div>
+</header>
+<!-- Warning Banner -->
+<div class="p-4">
+<div class="bg-orange-500 neo-border neo-shadow p-4 flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-black text-3xl font-bold">notifications_active</span>
+<div>
+<p class="font-black text-black uppercase text-lg leading-none">Enable Notifications</p>
+<p class="font-bold text-black/80 text-sm">Don't miss your wake-up call.</p>
+</div>
+</div>
+<button class="bg-black text-white px-6 py-2 font-black uppercase text-sm border-2 border-black hover:bg-white hover:text-black transition-colors">
+                Enable
+            </button>
+</div>
+</div>
+<!-- Status Card -->
+<div class="p-4">
+<div class="bg-white dark:bg-slate-800 neo-border neo-shadow p-6">
+<div class="flex items-center gap-4 mb-4">
+<div class="bg-green-500 rounded-full p-2 neo-border-sm">
+<span class="material-symbols-outlined text-white font-black">check</span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-slate-400 font-bold uppercase text-xs tracking-widest">System Status</p>
+<h2 class="text-2xl font-black uppercase italic leading-none">All systems go</h2>
+</div>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t-2 border-black/10">
+<p class="font-bold text-slate-600 dark:text-slate-300">Global readiness check completed.</p>
+<button class="bg-primary neo-border-sm neo-shadow-sm px-4 py-2 font-black uppercase text-sm self-start">
+                    Check Details
+                </button>
+</div>
+</div>
+</div>
+<!-- Alarm List Header -->
+<div class="px-4 pt-6 pb-2">
+<h2 class="text-3xl font-black uppercase italic underline decoration-primary decoration-8 underline-offset-4">Your Alarms</h2>
+</div>
+<!-- Alarm Cards Container -->
+<div class="p-4 space-y-6">
+<!-- Active Alarm Card -->
+<div class="bg-white dark:bg-slate-800 neo-border neo-shadow p-6 relative">
+<div class="flex justify-between items-start mb-2">
+<div>
+<span class="bg-black text-white px-3 py-1 text-xs font-black uppercase mb-2 inline-block">Work</span>
+<h3 class="text-6xl font-black tracking-tighter">07:30 <span class="text-2xl italic">AM</span></h3>
+</div>
+<div class="flex flex-col items-end gap-4">
+<!-- Custom Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-14 h-8 bg-slate-200 peer-focus:outline-none neo-border-sm peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-primary after:neo-border-sm after:h-6 after:w-6 after:transition-all peer-checked:bg-green-400"></div>
+</label>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-4 mt-6">
+<div class="flex gap-1">
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-primary font-black text-xs">M</span>
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-primary font-black text-xs">T</span>
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-primary font-black text-xs">W</span>
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-primary font-black text-xs">T</span>
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-primary font-black text-xs">F</span>
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-slate-100 dark:bg-slate-700 text-slate-400 font-black text-xs">S</span>
+<span class="w-8 h-8 flex items-center justify-center neo-border-sm bg-slate-100 dark:bg-slate-700 text-slate-400 font-black text-xs">S</span>
+</div>
+<div class="flex gap-2">
+<button class="neo-border-sm p-2 bg-white hover:bg-slate-100"><span class="material-symbols-outlined">edit</span></button>
+<button class="neo-border-sm p-2 bg-white hover:bg-red-100 text-red-600"><span class="material-symbols-outlined">delete</span></button>
+</div>
+</div>
+</div>
+<!-- Inactive Alarm Card -->
+<div class="bg-slate-100 dark:bg-slate-900 neo-border neo-shadow p-6 opacity-60">
+<div class="flex justify-between items-start mb-2">
+<div>
+<span class="bg-slate-400 text-white px-3 py-1 text-xs font-black uppercase mb-2 inline-block">Gym</span>
+<h3 class="text-6xl font-black tracking-tighter text-slate-500">06:00 <span class="text-2xl italic">AM</span></h3>
+</div>
+<div class="flex flex-col items-end gap-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-14 h-8 bg-slate-300 peer-focus:outline-none neo-border-sm peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:neo-border-sm after:h-6 after:w-6 after:transition-all peer-checked:bg-green-400"></div>
+</label>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-4 mt-6">
+<p class="font-bold text-slate-500">Every weekend</p>
+<div class="flex gap-2">
+<button class="neo-border-sm p-2 bg-white"><span class="material-symbols-outlined">edit</span></button>
+<button class="neo-border-sm p-2 bg-white text-red-600"><span class="material-symbols-outlined">delete</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- FAB -->
+<button class="fixed bottom-28 right-8 size-20 bg-primary neo-border neo-shadow flex items-center justify-center z-50 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all">
+<span class="material-symbols-outlined text-5xl font-black">add</span>
+</button>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-background-light dark:bg-background-dark border-t-4 border-black px-4 py-4 flex justify-around items-center z-40">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="bg-primary neo-border-sm p-2 neo-shadow-sm group-hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined font-black">alarm</span>
+</div>
+<span class="text-[10px] font-black uppercase">Alarms</span>
+</a>
+<a class="flex flex-col items-center gap-1 group opacity-50" href="#">
+<div class="bg-white neo-border-sm p-2 group-hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined font-black">timer</span>
+</div>
+<span class="text-[10px] font-black uppercase">Timer</span>
+</a>
+<a class="flex flex-col items-center gap-1 group opacity-50" href="#">
+<div class="bg-white neo-border-sm p-2 group-hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined font-black">hourglass_empty</span>
+</div>
+<span class="text-[10px] font-black uppercase">Stopwatch</span>
+</a>
+<a class="flex flex-col items-center gap-1 group opacity-50" href="#">
+<div class="bg-white neo-border-sm p-2 group-hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined font-black">settings</span>
+</div>
+<span class="text-[10px] font-black uppercase">Settings</span>
+</a>
+</nav>
+</body></html>

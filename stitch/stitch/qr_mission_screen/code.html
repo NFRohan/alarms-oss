@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QR Mission - Alarm App</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#ffff00",
+                "background-light": "#f8f8f5",
+                "background-dark": "#23230f",
+              },
+              fontFamily: {
+                "display": ["Inter", "sans-serif"]
+              },
+              borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        .neo-border {
+            border: 4px solid #000000;
+        }
+        .neo-shadow {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        .neo-shadow-lg {
+            box-shadow: 8px 8px 0px 0px #000000;
+        }
+        .scan-line {
+            height: 2px;
+            background: #ffff00;
+            width: 100%;
+            position: absolute;
+            top: 50%;
+            box-shadow: 0 0 15px #ffff00;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<header class="neo-border bg-primary p-4 m-4 flex items-center justify-between neo-shadow">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-3xl font-bold">notifications_active</span>
+<h2 class="text-xl font-black uppercase tracking-tighter">Alarm Still Ringing</h2>
+</div>
+<button class="neo-border bg-white p-1 hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined font-bold">close</span>
+</button>
+</header>
+<main class="flex-1 flex flex-col px-4 gap-6 pb-24">
+<div class="text-center">
+<h1 class="text-4xl font-black uppercase italic tracking-tighter mb-1">QR Scan Mission</h1>
+<div class="bg-primary inline-block px-2 py-1 neo-border font-bold text-sm uppercase">Mission 01/01</div>
+</div>
+<div class="relative flex-1 min-h-[300px] neo-border bg-black overflow-hidden neo-shadow-lg group">
+<div class="absolute inset-0 opacity-60">
+<img alt="Blurry camera view of a bathroom sink" class="w-full h-full object-cover" data-alt="Blurry camera view of a bathroom sink" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV_CIqB7kgxYLAMskuO-_kXXhuUXBcrKsvO8l_2xaK9NFXV1a1M5Spo8v_lqioEdxrmeKDJS-VroXj7VhbvuAg5InlZBQug1_hQfi_Vm9lAI6kk0aztYtoNtiwWZP7JaP7Dp-id6aig7aT-qG28rbmkFGD67zYPkrCWd2kbVbIs6PgUHbaBfw--RQ_Owie1SW2MnIenhMMVgPNRCJ0_TWHLgxR_fyMWU9V9t6NzPPtPp_b8V8dc9sPz6U0K2PePa_TlA10wKrfX7z9"/>
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-64 h-64 neo-border border-primary relative">
+<div class="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-primary"></div>
+<div class="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-primary"></div>
+<div class="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-primary"></div>
+<div class="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-primary"></div>
+<div class="scan-line"></div>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 right-4 bg-white neo-border p-3 neo-shadow flex items-center gap-3">
+<span class="material-symbols-outlined text-primary fill-1">info</span>
+<p class="font-bold uppercase text-xs">Scanning for: Toothpaste QR</p>
+</div>
+</div>
+<div class="bg-primary neo-border p-6 neo-shadow text-center">
+<p class="text-xl font-black uppercase leading-none mb-2">Scan your toothpaste QR code</p>
+<p class="text-sm font-bold opacity-80">Place the code inside the frame to stop the alarm</p>
+</div>
+<div class="flex gap-4">
+<button class="flex-1 neo-border bg-white py-4 neo-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined font-bold">flashlight_on</span>
+<span class="font-black uppercase">Flash</span>
+</button>
+<button class="flex-1 neo-border bg-white py-4 neo-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center justify-center gap-2 text-red-600">
+<span class="material-symbols-outlined font-bold">refresh</span>
+<span class="font-black uppercase">Retry</span>
+</button>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 right-0 bg-white border-t-4 border-black p-4 flex justify-around items-center z-50">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="neo-border p-1 group-hover:bg-primary transition-colors">
+<span class="material-symbols-outlined font-bold text-2xl">alarm</span>
+</div>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="neo-border p-1 bg-primary">
+<span class="material-symbols-outlined font-bold text-2xl">qr_code_scanner</span>
+</div>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="neo-border p-1 group-hover:bg-primary transition-colors">
+<span class="material-symbols-outlined font-bold text-2xl">leaderboard</span>
+</div>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<div class="neo-border p-1 group-hover:bg-primary transition-colors">
+<span class="material-symbols-outlined font-bold text-2xl">settings</span>
+</div>
+</a>
+</nav>
+<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-none opacity-0">
+<div class="bg-green-400 neo-border p-8 neo-shadow-lg text-center transform -rotate-3">
+<span class="material-symbols-outlined text-6xl mb-2">check_circle</span>
+<h3 class="text-4xl font-black uppercase">Mission Success</h3>
+<p class="font-bold">Alarm Disarmed</p>
+</div>
+</div>
+</body></html>

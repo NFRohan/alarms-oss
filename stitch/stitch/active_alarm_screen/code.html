@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neobrutalist Alarm</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#ffff00",
+                "background-light": "#ffff00",
+                "background-dark": "#1a1a00",
+                "accent-cyan": "#00ffff"
+              },
+              fontFamily: {
+                "display": ["Inter", "sans-serif"]
+              },
+              borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+              boxShadow: {
+                'neo': '8px 8px 0px 0px rgba(0,0,0,1)',
+                'neo-sm': '4px 4px 0px 0px rgba(0,0,0,1)',
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .neo-border { border: 4px solid black; }
+        .neo-border-sm { border: 2px solid black; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-black overflow-hidden selection:bg-black selection:text-primary">
+<div class="relative flex flex-col h-screen w-full items-center justify-between p-6">
+<!-- Top Bar -->
+<div class="w-full flex justify-between items-center mt-4">
+<div class="flex items-center gap-2 neo-border-sm bg-white p-2 shadow-neo-sm">
+<span class="material-symbols-outlined text-black">alarm</span>
+<span class="font-black uppercase tracking-tighter">Active Alarm</span>
+</div>
+<div class="neo-border-sm bg-white p-2 shadow-neo-sm">
+<span class="material-symbols-outlined text-black">battery_charging_full</span>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex flex-col items-center justify-center flex-1 w-full text-center gap-8">
+<div class="flex flex-col gap-2">
+<p class="text-xl font-black uppercase tracking-[0.2em] bg-black text-primary px-4 py-1 inline-block mx-auto mb-4">
+                    Alarm Ringing
+                </p>
+<h1 class="text-[15vw] md:text-[120px] font-[900] leading-none tracking-tighter text-black drop-shadow-md">
+                    07:30 AM
+                </h1>
+<h2 class="text-[8vw] md:text-[60px] font-[900] leading-none uppercase tracking-tight text-black italic">
+                    WAKE UP!
+                </h2>
+</div>
+<!-- Interaction Area -->
+<div class="flex flex-col gap-6 w-full max-w-md">
+<button class="w-full bg-white neo-border p-6 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+<span class="text-3xl font-black uppercase tracking-tighter">DISMISS</span>
+</button>
+<button class="w-full bg-accent-cyan neo-border p-4 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+<span class="text-xl font-black uppercase tracking-tighter">SNOOZE (5M)</span>
+</button>
+</div>
+</div>
+<!-- Mission Info Footer -->
+<div class="w-full max-w-md mb-8">
+<div class="bg-white neo-border p-4 shadow-neo flex items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="bg-black p-2">
+<span class="material-symbols-outlined text-primary">calculate</span>
+</div>
+<div>
+<p class="text-xs font-bold uppercase text-slate-500">Active Mission</p>
+<p class="text-lg font-black uppercase tracking-tight">Math (3 problems)</p>
+</div>
+</div>
+<div class="h-8 w-8 rounded-full border-2 border-black flex items-center justify-center font-bold">
+                    !
+                </div>
+</div>
+</div>
+</div>
+<!-- Decorative Background Elements -->
+<div class="fixed top-20 -left-10 w-40 h-40 bg-black/5 -rotate-12 pointer-events-none flex items-center justify-center overflow-hidden">
+<span class="text-9xl font-black opacity-10">Z</span>
+</div>
+<div class="fixed bottom-20 -right-10 w-48 h-48 bg-black/5 rotate-12 pointer-events-none flex items-center justify-center overflow-hidden">
+<span class="text-9xl font-black opacity-10">Z</span>
+</div>
+</body></html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffff00",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23230f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px", 
+                        "lg": "0px", 
+                        "xl": "0px", 
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'neo': '4px 4px 0px 0px #000000',
+                        'neo-lg': '8px 8px 0px 0px #000000',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .neo-border { border: 3px solid #000000; }
+        .neo-border-sm { border: 2px solid #000000; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex justify-center items-center p-4">
+<!-- Mobile Screen Container -->
+<div class="relative w-full max-w-[400px] h-[800px] bg-background-light dark:bg-background-dark neo-border shadow-neo-lg flex flex-col overflow-hidden">
+<!-- Pulsing Alarm Header -->
+<div class="bg-primary neo-border-sm m-4 p-4 flex items-center justify-between shadow-neo animate-pulse">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-3xl font-bold">alarm_on</span>
+<h2 class="text-xl font-black uppercase tracking-tighter">Wake Up!</h2>
+</div>
+<button class="material-symbols-outlined font-bold">volume_up</button>
+</div>
+<!-- Main Content -->
+<div class="flex-1 px-6 pt-4 flex flex-col">
+<div class="mb-8">
+<h1 class="text-4xl font-black uppercase italic leading-none mb-2">Math Mission</h1>
+<div class="flex items-center gap-2">
+<span class="bg-black text-primary px-3 py-1 text-sm font-bold uppercase">Difficulty</span>
+<span class="neo-border-sm px-3 py-1 text-sm font-black uppercase">Medium</span>
+</div>
+</div>
+<!-- Difficulty Progress -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-2">
+<p class="font-black text-sm uppercase">Mission Progress</p>
+<p class="font-black text-lg">60%</p>
+</div>
+<div class="h-6 w-full neo-border-sm bg-white overflow-hidden">
+<div class="h-full bg-primary neo-border-sm -ml-0.5" style="width: 60%;"></div>
+</div>
+</div>
+<!-- Math Problem Card -->
+<div class="bg-white dark:bg-slate-800 neo-border p-8 mb-8 shadow-neo text-center">
+<p class="text-xs font-black uppercase mb-4 opacity-50">Solve to Dismiss</p>
+<h2 class="text-5xl font-black tracking-tighter italic">24 x 3 + 12</h2>
+</div>
+<!-- Input Area -->
+<div class="flex flex-col gap-4">
+<label class="font-black uppercase text-sm italic">Your Answer</label>
+<div class="relative">
+<input class="w-full bg-white dark:bg-slate-800 neo-border p-6 text-4xl font-black shadow-neo focus:ring-0 focus:outline-none placeholder:opacity-20" placeholder="000" type="number"/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2">
+<span class="material-symbols-outlined text-4xl font-black">calculate</span>
+</div>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="mt-auto mb-10">
+<button class="w-full bg-primary neo-border p-6 shadow-neo active:translate-x-1 active:translate-y-1 active:shadow-none transition-all">
+<span class="text-2xl font-black uppercase italic tracking-widest">Submit</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation (Alarm Style) -->
+<div class="neo-border-sm border-x-0 border-b-0 bg-white dark:bg-slate-900 px-6 py-4 flex justify-between items-center">
+<a class="flex flex-col items-center" href="#">
+<span class="material-symbols-outlined font-black">home</span>
+<span class="text-[10px] font-black uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center bg-primary neo-border-sm px-4 py-1" href="#">
+<span class="material-symbols-outlined font-black">grid_view</span>
+<span class="text-[10px] font-black uppercase">Mission</span>
+</a>
+<a class="flex flex-col items-center" href="#">
+<span class="material-symbols-outlined font-black">settings</span>
+<span class="text-[10px] font-black uppercase">Settings</span>
+</a>
+</div>
+<!-- Decorative Elements -->
+<div class="absolute top-0 right-0 w-12 h-12 bg-primary neo-border -mr-6 -mt-6 rotate-45 z-0"></div>
+<div class="absolute bottom-20 left-0 w-8 h-8 bg-black -ml-4 rotate-12 z-0"></div>
+</div>
+</body></html>
