@@ -12,11 +12,16 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.UserManager
 import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.Executors
+import android.os.Handler
+import android.os.Looper
 import java.time.ZoneId
 
 class AlarmEngineMethodCallHandler(
@@ -29,12 +34,46 @@ class AlarmEngineMethodCallHandler(
     )
     private val appContext = context.applicationContext
     private val store = AlarmStore(appContext)
+    private val toneLibraryStore = ToneLibraryStore(appContext)
+    private val toneLibraryManager = ToneLibraryManager(appContext, toneLibraryStore)
     private val ringSessionStore = RingSessionStore(appContext)
     private val scheduler = AlarmScheduler(appContext, store)
     private val packageManager = appContext.packageManager
     private val sensorManager = appContext.getSystemService(SensorManager::class.java)
     private val powerManager = appContext.getSystemService(PowerManager::class.java)
     private val userManager = appContext.getSystemService(UserManager::class.java)
+    private val workerExecutor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingToneImportResult: MethodChannel.Result? = null
+    private val toneImportLauncher =
+        (activity as? ComponentActivity)?.registerForActivityResult(
+            ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            val callback = pendingToneImportResult ?: return@registerForActivityResult
+            pendingToneImportResult = null
+
+            if (uri == null) {
+                callback.success(null)
+                return@registerForActivityResult
+            }
+
+            workerExecutor.execute {
+                try {
+                    val tone = toneLibraryManager.importTone(uri)
+                    mainHandler.post {
+                        callback.success(tone)
+                    }
+                } catch (error: ToneImportException) {
+                    mainHandler.post {
+                        callback.error("tone_import_error", error.message, null)
+                    }
+                } catch (error: Exception) {
+                    mainHandler.post {
+                        callback.error("tone_import_error", "Unable to import the selected tone.", null)
+                    }
+                }
+            }
+        }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
@@ -66,7 +105,7 @@ class AlarmEngineMethodCallHandler(
                                 .thenBy { it.hour }
                                 .thenBy { it.minute },
                         )
-                        .map(AlarmRecord::toChannelMap),
+                        .map(::alarmToChannelMap),
                 )
 
                 "getActiveSession" -> {
@@ -83,7 +122,7 @@ class AlarmEngineMethodCallHandler(
                     val raw = call.arguments as? Map<*, *>
                         ?: throw IllegalArgumentException("Alarm payload missing.")
                     val record = AlarmRecord.fromChannelMap(raw)
-                    result.success(scheduler.upsert(record).toChannelMap())
+                    result.success(alarmToChannelMap(scheduler.upsert(record)))
                 }
 
                 "setAlarmEnabled" -> {
@@ -93,7 +132,7 @@ class AlarmEngineMethodCallHandler(
                         ?: throw IllegalArgumentException("Alarm id missing.")
                     val enabled = raw["enabled"] as? Boolean
                         ?: throw IllegalArgumentException("Enabled flag missing.")
-                    result.success(scheduler.updateEnabled(id, enabled).toChannelMap())
+                    result.success(alarmToChannelMap(scheduler.updateEnabled(id, enabled)))
                 }
 
                 "skipNextOccurrence" -> {
@@ -101,7 +140,7 @@ class AlarmEngineMethodCallHandler(
                         ?: throw IllegalArgumentException("Skip-next payload missing.")
                     val id = raw["id"] as? String
                         ?: throw IllegalArgumentException("Alarm id missing.")
-                    result.success(scheduler.skipNextOccurrence(id).toChannelMap())
+                    result.success(alarmToChannelMap(scheduler.skipNextOccurrence(id)))
                 }
 
                 "clearSkippedOccurrence" -> {
@@ -109,7 +148,31 @@ class AlarmEngineMethodCallHandler(
                         ?: throw IllegalArgumentException("Clear-skip payload missing.")
                     val id = raw["id"] as? String
                         ?: throw IllegalArgumentException("Alarm id missing.")
-                    result.success(scheduler.clearSkippedOccurrence(id).toChannelMap())
+                    result.success(alarmToChannelMap(scheduler.clearSkippedOccurrence(id)))
+                }
+
+                "listCustomTones" -> {
+                    result.success(toneLibraryManager.listToneMaps())
+                }
+
+                "importCustomTone" -> {
+                    if (toneImportLauncher == null) {
+                        throw IllegalStateException("Tone picker unavailable.")
+                    }
+                    if (pendingToneImportResult != null) {
+                        throw IllegalStateException("Tone import already in progress.")
+                    }
+                    pendingToneImportResult = result
+                    toneImportLauncher.launch(arrayOf("audio/mpeg", "audio/x-wav", "audio/wav"))
+                }
+
+                "deleteCustomTone" -> {
+                    val raw = call.arguments as? Map<*, *>
+                        ?: throw IllegalArgumentException("Delete tone payload missing.")
+                    val id = raw["id"] as? String
+                        ?: throw IllegalArgumentException("Tone id missing.")
+                    val affectedAlarmIds = toneLibraryManager.deleteTone(id)
+                    result.success(affectedAlarmIds)
                 }
 
                 "deleteAlarm" -> {
@@ -295,6 +358,26 @@ class AlarmEngineMethodCallHandler(
 
     private fun activeSession(): AlarmRingSession? {
         return ringSessionStore.get()?.takeIf(AlarmRingSession::isActive)
+    }
+
+    private fun alarmToChannelMap(record: AlarmRecord): Map<String, Any?> {
+        val customTone = record.customToneId?.let(toneLibraryStore::get)
+        val customToneHealthy = if (record.ringtoneId == "custom_tone") {
+            customTone?.let(toneLibraryManager::isHealthy) ?: false
+        } else {
+            true
+        }
+        val customToneName = if (record.ringtoneId == "custom_tone") {
+            customTone?.displayName ?: "Missing custom tone"
+        } else {
+            null
+        }
+
+        return record.toChannelMap() + mapOf(
+            "customToneId" to record.customToneId,
+            "customToneName" to customToneName,
+            "customToneHealthy" to customToneHealthy,
+        )
     }
 
     private fun isActivityRecognitionGranted(): Boolean {

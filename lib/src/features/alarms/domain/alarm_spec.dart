@@ -35,6 +35,11 @@ enum AlarmRingtone {
     'system_notification',
     'Notification tone',
     'Uses the device notification sound.',
+  ),
+  customTone(
+    'custom_tone',
+    'Custom tone',
+    'Uses an imported custom alarm tone.',
   );
 
   const AlarmRingtone(this.id, this.label, this.description);
@@ -61,6 +66,9 @@ class AlarmSpec {
     required this.enabled,
     required this.weekdays,
     required this.ringtone,
+    required this.customToneId,
+    required this.customToneName,
+    required this.customToneHealthy,
     required this.volumeRampEnabled,
     required this.extraLoudEnabled,
     required this.snoozeDurationMinutes,
@@ -82,6 +90,9 @@ class AlarmSpec {
       enabled: true,
       weekdays: const [],
       ringtone: AlarmRingtone.systemAlarm,
+      customToneId: null,
+      customToneName: null,
+      customToneHealthy: true,
       volumeRampEnabled: false,
       extraLoudEnabled: false,
       snoozeDurationMinutes: 9,
@@ -112,6 +123,9 @@ class AlarmSpec {
       enabled: raw['enabled']! as bool,
       weekdays: weekdaysRaw,
       ringtone: AlarmRingtone.fromId(raw['ringtoneId'] as String?),
+      customToneId: raw['customToneId'] as String?,
+      customToneName: raw['customToneName'] as String?,
+      customToneHealthy: raw['customToneHealthy'] as bool? ?? true,
       volumeRampEnabled: raw['volumeRampEnabled'] as bool? ?? false,
       extraLoudEnabled: raw['extraLoudEnabled'] as bool? ?? false,
       snoozeDurationMinutes: (raw['snoozeDurationMinutes'] as num).toInt(),
@@ -135,6 +149,9 @@ class AlarmSpec {
   final bool enabled;
   final List<AlarmWeekday> weekdays;
   final AlarmRingtone ringtone;
+  final String? customToneId;
+  final String? customToneName;
+  final bool customToneHealthy;
   final bool volumeRampEnabled;
   final bool extraLoudEnabled;
   final int snoozeDurationMinutes;
@@ -155,7 +172,12 @@ class AlarmSpec {
     return weekdays.map((weekday) => weekday.shortLabel).join(' ');
   }
 
-  String get ringtoneSummary => ringtone.label;
+  String get ringtoneSummary {
+    if (ringtone == AlarmRingtone.customTone) {
+      return customToneName ?? 'Custom tone';
+    }
+    return ringtone.label;
+  }
 
   String get missionSummary => mission.summary;
 
@@ -169,6 +191,9 @@ class AlarmSpec {
 
   bool get hasSkippedOccurrence => skippedOccurrenceLocalDate != null;
 
+  bool get hasCustomToneWarning =>
+      ringtone == AlarmRingtone.customTone && !customToneHealthy;
+
   AlarmSpec copyWith({
     String? id,
     String? label,
@@ -178,6 +203,10 @@ class AlarmSpec {
     bool? enabled,
     List<AlarmWeekday>? weekdays,
     AlarmRingtone? ringtone,
+    String? customToneId,
+    String? customToneName,
+    bool? customToneHealthy,
+    bool clearCustomToneId = false,
     bool? volumeRampEnabled,
     bool? extraLoudEnabled,
     int? snoozeDurationMinutes,
@@ -200,6 +229,9 @@ class AlarmSpec {
       enabled: enabled ?? this.enabled,
       weekdays: weekdays == null ? this.weekdays : normalizedWeekdays,
       ringtone: ringtone ?? this.ringtone,
+      customToneId: clearCustomToneId ? null : customToneId ?? this.customToneId,
+      customToneName: customToneName ?? this.customToneName,
+      customToneHealthy: customToneHealthy ?? this.customToneHealthy,
       volumeRampEnabled: volumeRampEnabled ?? this.volumeRampEnabled,
       extraLoudEnabled: extraLoudEnabled ?? this.extraLoudEnabled,
       snoozeDurationMinutes:
@@ -225,6 +257,7 @@ class AlarmSpec {
       'enabled': enabled,
       'weekdays': weekdays.map((weekday) => weekday.isoValue).toList(),
       'ringtoneId': ringtone.id,
+      'customToneId': customToneId,
       'volumeRampEnabled': volumeRampEnabled,
       'extraLoudEnabled': extraLoudEnabled,
       'snoozeDurationMinutes': snoozeDurationMinutes,

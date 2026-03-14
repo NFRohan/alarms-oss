@@ -34,6 +34,8 @@ import kotlin.math.min
 
 class AlarmRingingService : Service() {
     private lateinit var alarmStore: AlarmStore
+    private lateinit var toneLibraryStore: ToneLibraryStore
+    private lateinit var toneLibraryManager: ToneLibraryManager
     private lateinit var ringSessionStore: RingSessionStore
     private lateinit var audioManager: AudioManager
     private lateinit var userManager: UserManager
@@ -49,6 +51,8 @@ class AlarmRingingService : Service() {
     override fun onCreate() {
         super.onCreate()
         alarmStore = AlarmStore(applicationContext)
+        toneLibraryStore = ToneLibraryStore(applicationContext)
+        toneLibraryManager = ToneLibraryManager(applicationContext, toneLibraryStore)
         ringSessionStore = RingSessionStore(applicationContext)
         audioManager = getSystemService(AudioManager::class.java)
         userManager = getSystemService(UserManager::class.java)
@@ -351,6 +355,16 @@ class AlarmRingingService : Service() {
     private fun resolveToneUri(ringtoneId: String): Uri? {
         if (!isUserUnlocked()) {
             return fallbackToneUri()
+        }
+
+        if (ringtoneId == "custom_tone") {
+            val customToneId = currentSession?.alarmId
+                ?.let(alarmStore::get)
+                ?.customToneId
+            val customTone = customToneId?.let(toneLibraryStore::get)
+            val customToneUri = customTone?.takeIf(toneLibraryManager::isHealthy)
+                ?.let(toneLibraryManager::resolveToneUri)
+            return customToneUri ?: fallbackToneUri()
         }
 
         val ringtoneType = when (ringtoneId) {
@@ -659,4 +673,3 @@ class AlarmRingingService : Service() {
         }
     }
 }
-

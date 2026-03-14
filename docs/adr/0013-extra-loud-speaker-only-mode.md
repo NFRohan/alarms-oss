@@ -21,6 +21,7 @@ The project adopts these rules for the first version of `Extra loud mode`:
 5. The enhancer is applied only when the current output route is considered speaker-safe.
 6. If wired headphones, Bluetooth audio, USB audio, or other private routes are active, the enhancer is not applied.
 7. If enhancer setup fails for any reason, playback falls back to normal alarm audio rather than failing the alarm.
+8. `Extra loud mode` does not disable or replace `Volume ramp up`; if both are enabled for the same alarm, the ramp still controls player volume while the conservative loudness enhancement remains attached to that playback session.
 
 ## Consequences
 

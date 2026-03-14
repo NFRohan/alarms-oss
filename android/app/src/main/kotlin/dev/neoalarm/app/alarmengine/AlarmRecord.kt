@@ -13,6 +13,7 @@ data class AlarmRecord(
     val enabled: Boolean,
     val weekdays: List<Int>,
     val ringtoneId: String,
+    val customToneId: String?,
     val volumeRampEnabled: Boolean,
     val extraLoudEnabled: Boolean,
     val snoozeDurationMinutes: Int,
@@ -31,6 +32,7 @@ data class AlarmRecord(
             "enabled" to enabled,
             "weekdays" to weekdays,
             "ringtoneId" to ringtoneId,
+            "customToneId" to customToneId,
             "volumeRampEnabled" to volumeRampEnabled,
             "extraLoudEnabled" to extraLoudEnabled,
             "snoozeDurationMinutes" to snoozeDurationMinutes,
@@ -53,6 +55,7 @@ data class AlarmRecord(
             put("enabled", enabled)
             put("weekdays", JSONArray().apply { weekdays.forEach(::put) })
             put("ringtoneId", ringtoneId)
+            put("customToneId", customToneId)
             put("volumeRampEnabled", volumeRampEnabled)
             put("extraLoudEnabled", extraLoudEnabled)
             put("snoozeDurationMinutes", snoozeDurationMinutes)
@@ -76,6 +79,7 @@ data class AlarmRecord(
                 enabled = raw["enabled"] as Boolean,
                 weekdays = weekdaysRaw.mapNotNull { (it as? Number)?.toInt() }.sorted(),
                 ringtoneId = (raw["ringtoneId"] as? String) ?: "system_alarm",
+                customToneId = (raw["customToneId"] as? String)?.takeUnless { it.isBlank() },
                 volumeRampEnabled = raw["volumeRampEnabled"] as? Boolean ?: false,
                 extraLoudEnabled = raw["extraLoudEnabled"] as? Boolean ?: false,
                 snoozeDurationMinutes = (raw["snoozeDurationMinutes"] as Number).toInt(),
@@ -115,6 +119,7 @@ data class AlarmRecord(
                 enabled = json.getBoolean("enabled"),
                 weekdays = weekdays,
                 ringtoneId = json.optString("ringtoneId", "system_alarm"),
+                customToneId = json.optString("customToneId").takeUnless { it.isBlank() },
                 volumeRampEnabled = json.optBoolean("volumeRampEnabled", false),
                 extraLoudEnabled = json.optBoolean("extraLoudEnabled", false),
                 snoozeDurationMinutes = json.optInt("snoozeDurationMinutes", 9),

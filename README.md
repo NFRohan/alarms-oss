@@ -40,6 +40,7 @@ Implemented today:
 - `Skip next` for repeating alarms without disabling the full schedule
 - per-alarm `Volume ramp up` toggle
 - per-alarm `Extra loud mode` with conservative speaker-only boost
+- reusable custom tone imports with per-alarm tone selection
 - snooze duration and max-snooze limits
 - active ring-session recovery after process death
 - diagnostics and permission repair flows
@@ -49,6 +50,12 @@ Implemented today:
 - QR mission backed by a reusable native vision pipeline
 - quiet timer sourced from the persisted native timeout deadline
 - `MediaPlayer`-based alarm playback with a bundled direct-boot-safe fallback tone for reboot-before-unlock alarms
+- custom tone validation with MIME checks, a 15 MB import cap, and fallback-to-warning behavior when a tone source disappears
+
+Current playback note:
+
+- `Volume ramp up` and `Extra loud mode` are independent per-alarm options
+- when both are enabled, the player ramps upward normally and the conservative speaker-only loudness boost is applied on top of that playback session
 - minified release builds, CodeQL, dependency review, and release artifact workflows
 
 ## Screenshots

@@ -3,6 +3,7 @@ import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_tone.dart';
 import 'package:neoalarm/src/features/app_startup/domain/app_startup_context.dart';
 import 'package:flutter/services.dart';
 
@@ -146,6 +147,37 @@ class NativeAlarmRepository implements AlarmRepository {
       {'id': id},
     );
     return AlarmSpec.fromMap(raw ?? const {});
+  }
+
+  @override
+  Future<List<AlarmTone>> listCustomTones() async {
+    final rawList =
+        await _channel.invokeListMethod<Object?>('listCustomTones') ?? const [];
+    return rawList
+        .cast<Map<Object?, Object?>>()
+        .map(AlarmTone.fromMap)
+        .toList();
+  }
+
+  @override
+  Future<AlarmTone?> importCustomTone() async {
+    final raw = await _channel.invokeMapMethod<Object?, Object?>(
+      'importCustomTone',
+    );
+    if (raw == null) {
+      return null;
+    }
+    return AlarmTone.fromMap(raw);
+  }
+
+  @override
+  Future<List<String>> deleteCustomTone(String id) async {
+    final raw =
+        await _channel.invokeListMethod<Object?>('deleteCustomTone', {
+          'id': id,
+        }) ??
+        const [];
+    return raw.cast<String>();
   }
 
   @override

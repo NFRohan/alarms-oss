@@ -691,6 +691,14 @@ class _AlarmCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _InfoRow(label: 'Tone', value: alarm.ringtoneSummary),
+            if (alarm.hasCustomToneWarning) ...[
+              const SizedBox(height: 8),
+              const _InfoRow(
+                label: 'Tone status',
+                value: 'Fallback tone active until custom tone is repaired',
+                warning: true,
+              ),
+            ],
             const SizedBox(height: 8),
             _InfoRow(label: 'Volume', value: alarm.volumeSummary),
             if (alarm.hasSkippedOccurrence) ...[
@@ -822,10 +830,15 @@ class _InfoBanner extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.warning = false,
+  });
 
   final String label;
   final String value;
+  final bool warning;
 
   @override
   Widget build(BuildContext context) {
@@ -839,11 +852,18 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             label.toUpperCase(),
             style: theme.textTheme.labelMedium?.copyWith(
-              color: NeoColors.subtext,
+              color: warning ? NeoColors.warningText : NeoColors.subtext,
             ),
           ),
         ),
-        Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
+        Expanded(
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: warning ? NeoColors.warningText : null,
+            ),
+          ),
+        ),
       ],
     );
   }

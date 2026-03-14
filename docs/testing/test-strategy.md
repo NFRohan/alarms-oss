@@ -130,6 +130,7 @@ Cover:
 - reboot recovery
 - reboot recovery before first unlock
 - post-reboot locked-state fallback tone behavior
+- custom tone import validation for MIME type, file-size cap, copy failure fallback, and missing-source warning behavior
 - speaker-only extra-loud route behavior and no-boost behavior on headphones/Bluetooth
 - manual time and timezone changes
 - overlapping alarms
@@ -162,6 +163,7 @@ Current validation status:
 
 - reboot recovery has been validated on-device
 - Doze resilience has been validated on-device
+- at least one roughly `1 hour 15 minute` long-idle exact-alarm test window on Samsung has been validated end to end, with Android confirming the alarm as both `Next alarm clock` and `Next wake from idle` before successful delivery at the expected minute
 
 Direct-boot note:
 

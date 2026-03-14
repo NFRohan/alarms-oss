@@ -5,6 +5,7 @@ import 'package:neoalarm/src/features/alarms/domain/active_alarm_session.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_mission.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
+import 'package:neoalarm/src/features/alarms/domain/alarm_tone.dart';
 import 'package:neoalarm/src/features/app_startup/domain/app_startup_context.dart';
 import 'package:neoalarm/src/features/onboarding/application/onboarding_controller.dart';
 import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
@@ -247,6 +248,21 @@ class _FakeAlarmRepository implements AlarmRepository {
   @override
   Future<AlarmSpec> clearSkippedOccurrence(String id) async {
     throw UnimplementedError();
+  }
+
+  @override
+  Future<List<AlarmTone>> listCustomTones() async {
+    return const [];
+  }
+
+  @override
+  Future<AlarmTone?> importCustomTone() async {
+    return null;
+  }
+
+  @override
+  Future<List<String>> deleteCustomTone(String id) async {
+    return const [];
   }
 
   @override

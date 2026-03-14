@@ -35,7 +35,14 @@ Owns:
 - foreground ringing service
 - `MediaPlayer` alarm playback, per-alarm ramp handling, and direct-boot-safe fallback tone selection
 - conservative speaker-only `LoudnessEnhancer` support for opt-in extra loud alarms
+- reusable custom-tone imports with copy-first storage and URI-reference fallback
 - wake handling and lock-screen launch
+
+Current playback interaction note:
+
+- `Volume ramp up` and `Extra loud mode` are separate per-alarm controls
+- if both are enabled, the alarm ramps its player volume while the conservative speaker-only loudness enhancement remains attached to the same playback session
+- custom tones are preferred only after unlock; before first unlock after reboot, playback always falls back to the bundled direct-boot-safe tone
 
 Security note:
 
