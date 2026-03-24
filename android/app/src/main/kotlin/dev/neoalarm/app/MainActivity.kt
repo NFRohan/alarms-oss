@@ -10,12 +10,12 @@ import dev.neoalarm.app.alarmengine.RingSessionStore
 import dev.neoalarm.app.vision.VisionMethodCallHandler
 import dev.neoalarm.app.vision.VisionPreviewPlatformViewFactory
 import dev.neoalarm.app.vision.VisionSessionManager
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private lateinit var visionSessionManager: VisionSessionManager
     private lateinit var activeSessionStreamHandler: ActiveSessionStreamHandler
 
