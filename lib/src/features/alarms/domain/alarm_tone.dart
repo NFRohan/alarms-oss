@@ -38,4 +38,6 @@ class AlarmTone {
     final kilobytes = sizeBytes / 1024;
     return '${kilobytes.toStringAsFixed(0)} KB';
   }
+
+  String get metadataSummary => '$sizeSummary | $mimeType';
 }

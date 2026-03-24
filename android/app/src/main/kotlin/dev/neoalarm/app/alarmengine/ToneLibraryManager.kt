@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.UUID
@@ -131,11 +132,20 @@ class ToneLibraryManager(
         uri: Uri,
         destinationPath: String,
     ) {
-        contentResolver.openInputStream(uri)?.use { input ->
-            FileOutputStream(destinationPath).use { output ->
-                input.copyTo(output)
-            }
-        } ?: throw IOException("Unable to open selected tone.")
+        val destinationFile = File(destinationPath)
+        try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(destinationFile).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: throw IOException("Unable to open selected tone.")
+        } catch (error: IOException) {
+            destinationFile.delete()
+            throw error
+        } catch (error: RuntimeException) {
+            destinationFile.delete()
+            throw error
+        }
     }
 
     private fun queryMetadata(contentResolver: ContentResolver, uri: Uri): ToneMetadata {

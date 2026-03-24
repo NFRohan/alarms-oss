@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:neoalarm/src/core/theme/app_theme.dart';
 import 'package:neoalarm/src/core/ui/neo_brutal_widgets.dart';
 import 'package:neoalarm/src/features/alarms/application/alarm_list_controller.dart';
@@ -10,6 +9,9 @@ import 'package:neoalarm/src/features/alarms/domain/alarm_engine_status.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_spec.dart';
 import 'package:neoalarm/src/features/alarms/domain/alarm_tone.dart';
 import 'package:neoalarm/src/features/alarms/presentation/qr_target_capture_screen.dart';
+import 'package:neoalarm/src/features/alarms/presentation/widgets/alarm_custom_tone_panel.dart';
+import 'package:neoalarm/src/features/alarms/presentation/widgets/alarm_editor_widgets.dart';
+import 'package:neoalarm/src/features/alarms/presentation/widgets/alarm_time_picker_sheet.dart';
 import 'package:neoalarm/src/features/missions/application/mission_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,22 +165,22 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _TimeBlock(
+                          AlarmTimeBlock(
                             label: _time.hourOfPeriod.toString().padLeft(2, '0'),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(':', style: theme.textTheme.displayMedium),
                           ),
-                          _TimeBlock(
+                          AlarmTimeBlock(
                             label: _time.minute.toString().padLeft(2, '0'),
                           ),
                           const SizedBox(width: 12),
                           Column(
                             children: [
-                              _PeriodChip(label: 'AM', active: amPmLabel == 'AM'),
+                              AlarmPeriodChip(label: 'AM', active: amPmLabel == 'AM'),
                               const SizedBox(height: 8),
-                              _PeriodChip(label: 'PM', active: amPmLabel == 'PM'),
+                              AlarmPeriodChip(label: 'PM', active: amPmLabel == 'PM'),
                             ],
                           ),
                         ],
@@ -203,7 +205,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                     children: [
                       if (diagnostics != null &&
                           !diagnostics.canScheduleExactAlarms) ...[
-                        const _EditorWarning(
+                        const AlarmEditorWarning(
                           title: 'Exact alarms are not ready',
                           detail:
                               'You can still save the alarm, but enabling it will fail until exact-alarm access is available.',
@@ -243,7 +245,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                             .toList(growable: false),
                       ),
                       const SizedBox(height: 18),
-                      _EditorSelector(
+                      AlarmEditorSelector(
                         title: 'RINGTONE',
                         child: DropdownButtonFormField<AlarmRingtone>(
                           initialValue: _ringtone,
@@ -275,10 +277,22 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                       ),
                       if (_ringtone == AlarmRingtone.customTone) ...[
                         const SizedBox(height: 14),
-                        _buildCustomTonePanel(context),
+                        AlarmCustomTonePanel(
+                          tones: _customTones,
+                          tonesLoading: _tonesLoading,
+                          toneLibraryError: _toneLibraryError,
+                          selectedToneId: _selectedCustomToneId,
+                          onToneSelected: (value) {
+                            setState(() {
+                              _selectedCustomToneId = value;
+                            });
+                          },
+                          onImportTone: _importCustomTone,
+                          onManageTones: _customTones.isEmpty ? null : _manageCustomTones,
+                        ),
                       ],
                       const SizedBox(height: 14),
-                      _EditorToggleRow(
+                      AlarmEditorToggleRow(
                         title: 'VOLUME RAMP UP',
                         detail:
                             'Start softer and climb toward full alarm volume while ringing.',
@@ -290,7 +304,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                         },
                       ),
                       const SizedBox(height: 14),
-                      _EditorToggleRow(
+                      AlarmEditorToggleRow(
                         title: 'EXTRA LOUD MODE',
                         detail:
                             'Applies a small speaker-only loudness boost. Headphones and Bluetooth stay untouched.',
@@ -302,7 +316,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                         },
                       ),
                       const SizedBox(height: 14),
-                      _EditorSelector(
+                      AlarmEditorSelector(
                         title: 'SNOOZE',
                         child: DropdownButtonFormField<int>(
                           initialValue: _snoozeDurationMinutes,
@@ -330,7 +344,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _EditorSelector(
+                      AlarmEditorSelector(
                         title: 'DISMISSAL',
                         child: DropdownButtonFormField<AlarmMissionType>(
                           initialValue: _mission.type,
@@ -370,7 +384,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                           !(diagnostics?.activityRecognitionGranted ??
                               true)) ...[
                         const SizedBox(height: 12),
-                        const _EditorWarning(
+                        const AlarmEditorWarning(
                           title: 'Steps mission hidden',
                           detail:
                               'Grant or re-enable activity recognition from Settings > Device readiness before steps alarms can be configured.',
@@ -379,7 +393,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                       if ((diagnostics?.hasCamera ?? false) &&
                           !(diagnostics?.cameraPermissionGranted ?? true)) ...[
                         const SizedBox(height: 12),
-                        const _EditorWarning(
+                        const AlarmEditorWarning(
                           title: 'QR mission hidden',
                           detail:
                               'Grant or re-enable camera permission from Settings > Device readiness before QR-backed alarms can be configured.',
@@ -387,7 +401,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                       ],
                       if (_mission.type == AlarmMissionType.math) ...[
                         const SizedBox(height: 14),
-                        _EditorSelector(
+                        AlarmEditorSelector(
                           title: 'MATH DIFFICULTY',
                           child: DropdownButtonFormField<MathMissionDifficulty>(
                             initialValue: _mission.mathDifficulty,
@@ -420,7 +434,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        _EditorSelector(
+                        AlarmEditorSelector(
                           title: 'PROBLEM COUNT',
                           child: DropdownButtonFormField<int>(
                             initialValue: _mission.mathProblemCount,
@@ -453,7 +467,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                         ),
                       ] else if (_mission.type == AlarmMissionType.steps) ...[
                         const SizedBox(height: 14),
-                        _EditorSelector(
+                        AlarmEditorSelector(
                           title: 'STEP GOAL',
                           child: DropdownButtonFormField<int>(
                             initialValue: _mission.stepGoal,
@@ -494,7 +508,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                               const SizedBox(height: 10),
                               Text(
                                 _mission.hasQrTarget
-                                    ? 'A QR target is saved for this alarm.'
+                              ? 'A QR target is saved for this alarm.'
                                     : 'Scan the QR code this alarm should require before saving.',
                                 style: theme.textTheme.bodyMedium,
                               ),
@@ -545,7 +559,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
                         runSpacing: 8,
                         children: [0, 1, 2, 3, 4, 5]
                             .map(
-                              (count) => _CountChip(
+                              (count) => AlarmCountChip(
                                 count: count,
                                 selected: _maxSnoozes == count,
                                 onTap: () {
@@ -593,7 +607,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
   }
 
   Future<void> _pickTime() async {
-    final selected = await _AlarmTimePickerSheet.show(
+    final selected = await AlarmTimePickerSheet.show(
       context,
       initialTime: _time,
       countdownText: _alarmPreviewCountdownText(),
@@ -768,7 +782,7 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
   }
 
   Future<void> _manageCustomTones() async {
-    await _ToneManagementSheet.show(
+    await AlarmToneManagementSheet.show(
       context,
       tones: _customTones,
       onDelete: (tone) async {
@@ -783,565 +797,6 @@ class _AlarmEditorSheetState extends ConsumerState<AlarmEditorSheet> {
       },
     );
   }
-
-  Widget _buildCustomTonePanel(BuildContext context) {
-    AlarmTone? selectedTone;
-    for (final tone in _customTones) {
-      if (tone.id == _selectedCustomToneId) {
-        selectedTone = tone;
-        break;
-      }
-    }
-    final missingSelectedTone =
-        _selectedCustomToneId != null && selectedTone == null;
-
-    return NeoPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('CUSTOM TONE', style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 10),
-          if (_tonesLoading)
-            const LinearProgressIndicator()
-          else if (_toneLibraryError != null)
-            Text(
-              _toneLibraryError!,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: NeoColors.warningText),
-            )
-          else if (_customTones.isEmpty)
-            Text(
-              'No custom tones imported yet.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: NeoColors.subtext),
-            )
-          else
-            DropdownButtonFormField<String>(
-              initialValue: selectedTone?.id,
-              decoration: const InputDecoration(border: InputBorder.none),
-              icon: const Icon(Icons.expand_more),
-              items: _customTones
-                  .map(
-                    (tone) => DropdownMenuItem<String>(
-                      value: tone.id,
-                      child: Text(tone.displayName.toUpperCase()),
-                    ),
-                  )
-                  .toList(growable: false),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCustomToneId = value;
-                });
-              },
-            ),
-          if (selectedTone != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${selectedTone.sizeSummary} · ${selectedTone.mimeType}',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: NeoColors.subtext),
-            ),
-            if (!selectedTone.isHealthy || selectedTone.warning != null) ...[
-              const SizedBox(height: 8),
-              _EditorWarning(
-                title: 'Custom tone needs attention',
-                detail:
-                    selectedTone.warning ??
-                    'This custom tone is unavailable. NeoAlarm will fall back to the bundled alarm tone until you repair it.',
-              ),
-            ],
-          ],
-          if (missingSelectedTone) ...[
-            const SizedBox(height: 8),
-            const _EditorWarning(
-              title: 'Missing custom tone',
-              detail:
-                  'This alarm points at a custom tone that no longer exists. NeoAlarm will fall back to the bundled alarm tone until you choose another tone.',
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: NeoActionButton(
-                  label: 'Import tone',
-                  backgroundColor: NeoColors.primary,
-                  onPressed: _importCustomTone,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: NeoActionButton(
-                  label: 'Manage imports',
-                  backgroundColor: NeoColors.panel,
-                  onPressed: _customTones.isEmpty ? null : _manageCustomTones,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ToneManagementSheet extends StatelessWidget {
-  const _ToneManagementSheet({
-    required this.tones,
-    required this.onDelete,
-  });
-
-  final List<AlarmTone> tones;
-  final Future<void> Function(AlarmTone tone) onDelete;
-
-  static Future<void> show(
-    BuildContext context, {
-    required List<AlarmTone> tones,
-    required Future<void> Function(AlarmTone tone) onDelete,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ToneManagementSheet(tones: tones, onDelete: onDelete),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FractionallySizedBox(
-      heightFactor: 0.72,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: NeoPanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'MANAGE TONES',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Imported tones can be reused across alarms. Removing one will make affected alarms fall back to the bundled alarm tone until repaired.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: NeoColors.subtext),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: tones.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final tone = tones[index];
-                    return NeoPanel(
-                      color: NeoColors.panel,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tone.displayName,
-                                  style: Theme.of(context).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${tone.sizeSummary} · ${tone.mimeType}',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(
-                                    color: NeoColors.subtext,
-                                  ),
-                                ),
-                                if (!tone.isHealthy || tone.warning != null) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    tone.warning ??
-                                        'This tone is currently unhealthy and may fall back at playback time.',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: NeoColors.warningText,
-                                        ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          NeoSquareIconButton(
-                            icon: Icons.delete,
-                            backgroundColor: NeoColors.warm,
-                            foregroundColor: Colors.red.shade700,
-                            onPressed: () async {
-                              await onDelete(tone);
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AlarmTimePickerSheet extends StatefulWidget {
-  const _AlarmTimePickerSheet({
-    required this.initialTime,
-    required this.countdownText,
-  });
-
-  final TimeOfDay initialTime;
-  final String countdownText;
-
-  static Future<TimeOfDay?> show(
-    BuildContext context, {
-    required TimeOfDay initialTime,
-    required String countdownText,
-  }) {
-    return showModalBottomSheet<TimeOfDay>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.68),
-      builder: (context) => _AlarmTimePickerSheet(
-        initialTime: initialTime,
-        countdownText: countdownText,
-      ),
-    );
-  }
-
-  @override
-  State<_AlarmTimePickerSheet> createState() => _AlarmTimePickerSheetState();
-}
-
-class _AlarmTimePickerSheetState extends State<_AlarmTimePickerSheet> {
-  late int _selectedHour;
-  late int _selectedMinute;
-  late DayPeriod _selectedPeriod;
-  late final FixedExtentScrollController _hourController;
-  late final FixedExtentScrollController _minuteController;
-  late final FixedExtentScrollController _periodController;
-  Timer? _countdownTicker;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedHour = widget.initialTime.hourOfPeriod == 0
-        ? 12
-        : widget.initialTime.hourOfPeriod;
-    _selectedMinute = widget.initialTime.minute;
-    _selectedPeriod = widget.initialTime.period;
-    _hourController = FixedExtentScrollController(initialItem: _selectedHour - 1);
-    _minuteController = FixedExtentScrollController(initialItem: _selectedMinute);
-    _periodController = FixedExtentScrollController(
-      initialItem: _selectedPeriod == DayPeriod.am ? 0 : 1,
-    );
-    _countdownTicker = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _countdownTicker?.cancel();
-    _hourController.dispose();
-    _minuteController.dispose();
-    _periodController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final localizations = MaterialLocalizations.of(context);
-    final mediaQuery = MediaQuery.of(context);
-    final selectedTime = _selectedTime;
-    final countdownText = formatAlarmCountdown(
-      computeNextAlarmPreview(
-        hour: selectedTime.hour,
-        minute: selectedTime.minute,
-        weekdays: const [],
-      ),
-    );
-
-    return FractionallySizedBox(
-      heightFactor: 0.7,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          10,
-          16,
-          10,
-          10 + mediaQuery.viewPadding.bottom,
-        ),
-        child: DecoratedBox(
-          decoration: neoPanelDecoration(
-            color: NeoColors.paper,
-            borderWidth: 3,
-            shadowOffset: const Offset(5, 5),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                decoration: BoxDecoration(
-                  color: NeoColors.cyan,
-                  border: Border(
-                    bottom: BorderSide(color: NeoColors.ink, width: 3),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PICK TIME',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              color: NeoColors.accentInk,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            localizations.formatTimeOfDay(
-                              selectedTime,
-                              alwaysUse24HourFormat: false,
-                            ),
-                            style: theme.textTheme.displaySmall?.copyWith(
-                              color: NeoColors.accentInk,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            countdownText,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: NeoColors.accentInk,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    NeoSquareIconButton(
-                      icon: Icons.close,
-                      backgroundColor: NeoColors.panel,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-                  child: NeoPanel(
-                    color: NeoColors.panel,
-                    padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _TimeWheel(
-                            controller: _hourController,
-                            childCount: 12,
-                            onSelectedItemChanged: (index) {
-                              setState(() {
-                                _selectedHour = index + 1;
-                              });
-                            },
-                            itemBuilder: (context, index) => _TimeWheelValue(
-                              label: '${index + 1}',
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Text(
-                            ':',
-                            style: theme.textTheme.displayMedium?.copyWith(
-                              color: NeoColors.ink,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: _TimeWheel(
-                            controller: _minuteController,
-                            childCount: 60,
-                            onSelectedItemChanged: (index) {
-                              setState(() {
-                                _selectedMinute = index;
-                              });
-                            },
-                            itemBuilder: (context, index) => _TimeWheelValue(
-                              label: index.toString().padLeft(2, '0'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 112,
-                          child: _TimeWheel(
-                            controller: _periodController,
-                            childCount: 2,
-                            onSelectedItemChanged: (index) {
-                              setState(() {
-                                _selectedPeriod = index == 0
-                                    ? DayPeriod.am
-                                    : DayPeriod.pm;
-                              });
-                            },
-                            itemBuilder: (context, index) => _TimeWheelValue(
-                              label: index == 0 ? 'AM' : 'PM',
-                              compact: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: NeoActionButton(
-                        label: 'Cancel',
-                        backgroundColor: NeoColors.panel,
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: NeoActionButton(
-                        label: 'Apply',
-                        backgroundColor: NeoColors.primary,
-                        onPressed: () {
-                          Navigator.of(context).pop(selectedTime);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  TimeOfDay get _selectedTime {
-    final normalizedHour = _selectedHour % 12;
-    final resolvedHour = _selectedPeriod == DayPeriod.am
-        ? normalizedHour
-        : normalizedHour + 12;
-    return TimeOfDay(hour: resolvedHour, minute: _selectedMinute);
-  }
-}
-
-class _TimeWheel extends StatelessWidget {
-  const _TimeWheel({
-    required this.controller,
-    required this.childCount,
-    required this.itemBuilder,
-    required this.onSelectedItemChanged,
-  });
-
-  final FixedExtentScrollController controller;
-  final int childCount;
-  final NullableIndexedWidgetBuilder itemBuilder;
-  final ValueChanged<int> onSelectedItemChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        CupertinoTheme(
-          data: CupertinoThemeData(
-            brightness: Theme.of(context).brightness,
-            primaryColor: NeoColors.ink,
-          ),
-          child: CupertinoPicker.builder(
-            scrollController: controller,
-            itemExtent: 58,
-            diameterRatio: 1.18,
-            squeeze: 1.18,
-            selectionOverlay: const SizedBox.shrink(),
-            onSelectedItemChanged: onSelectedItemChanged,
-            childCount: childCount,
-            itemBuilder: itemBuilder,
-          ),
-        ),
-        IgnorePointer(
-          child: Container(
-            height: 70,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: NeoColors.primary.withValues(alpha: 0.24),
-              border: Border(
-                top: BorderSide(color: NeoColors.ink, width: 3),
-                bottom: BorderSide(color: NeoColors.ink, width: 3),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TimeWheelValue extends StatelessWidget {
-  const _TimeWheelValue({required this.label, this.compact = false});
-
-  final String label;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Text(
-        label,
-        style: (compact
-                ? theme.textTheme.headlineLarge
-                : theme.textTheme.displayMedium)
-            ?.copyWith(
-              color: NeoColors.ink,
-              fontStyle: FontStyle.italic,
-              fontSize: compact ? 30 : 40,
-            ),
-      ),
-    );
-  }
 }
 
 class _MissionOption {
@@ -1354,188 +809,4 @@ class _MissionOption {
   final String title;
   final String detail;
   final bool enabled;
-}
-
-class _TimeBlock extends StatelessWidget {
-  const _TimeBlock({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return NeoPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.displayMedium?.copyWith(fontStyle: FontStyle.italic),
-      ),
-    );
-  }
-}
-
-class _PeriodChip extends StatelessWidget {
-  const _PeriodChip({required this.label, required this.active});
-
-  final String label;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor = active ? NeoColors.primary : NeoColors.panel;
-
-    return Container(
-      width: 54,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: Border.all(color: NeoColors.ink, width: 2),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: NeoColors.foregroundOn(backgroundColor),
-        ),
-      ),
-    );
-  }
-}
-
-class _EditorSelector extends StatelessWidget {
-  const _EditorSelector({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return NeoPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.labelMedium),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _EditorToggleRow extends StatelessWidget {
-  const _EditorToggleRow({
-    required this.title,
-    required this.detail,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String title;
-  final String detail;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return NeoPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.labelMedium),
-                const SizedBox(height: 6),
-                Text(
-                  detail,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: NeoColors.subtext),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          NeoToggle(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-}
-
-class _CountChip extends StatelessWidget {
-  const _CountChip({required this.count, required this.selected, this.onTap});
-
-  final int count;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor = selected ? NeoColors.primary : NeoColors.panel;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          border: Border.all(color: NeoColors.ink, width: 2),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          '$count',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: NeoColors.foregroundOn(backgroundColor),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EditorWarning extends StatelessWidget {
-  const _EditorWarning({required this.title, required this.detail});
-
-  final String title;
-  final String detail;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: NeoColors.warningSurface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              detail,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: NeoColors.warningText,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

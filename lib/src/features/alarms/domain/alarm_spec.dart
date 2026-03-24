@@ -186,7 +186,7 @@ class AlarmSpec {
       if (volumeRampEnabled) 'Ramp up' else 'Full volume',
       if (extraLoudEnabled) 'Extra loud',
     ];
-    return labels.join(' · ');
+    return labels.join(' | ');
   }
 
   bool get hasSkippedOccurrence => skippedOccurrenceLocalDate != null;
@@ -229,7 +229,8 @@ class AlarmSpec {
       enabled: enabled ?? this.enabled,
       weekdays: weekdays == null ? this.weekdays : normalizedWeekdays,
       ringtone: ringtone ?? this.ringtone,
-      customToneId: clearCustomToneId ? null : customToneId ?? this.customToneId,
+      customToneId:
+          clearCustomToneId ? null : customToneId ?? this.customToneId,
       customToneName: customToneName ?? this.customToneName,
       customToneHealthy: customToneHealthy ?? this.customToneHealthy,
       volumeRampEnabled: volumeRampEnabled ?? this.volumeRampEnabled,
